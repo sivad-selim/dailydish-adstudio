@@ -1,4 +1,6 @@
 "use client";
+import { Icon } from "./components/Icon";
+import { Button } from "./components/Button";
 
 import { useEffect, useRef, useState } from "react";
 import type { Campaign } from "../firebase/campaigns";
@@ -127,14 +129,14 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
     finally { busyRef.current = false; if (mounted.current) setBusy(false); }
   }
   function publishedStatus(job: InstagramPublication) {
-    return <div className="instagram-clear-status"><span>{publicationFlags[job.account]} {job.publishedAt ? `Publié le ${publicationDate(job.publishedAt)}` : "Publié"}</span><button type="button" disabled={busy} aria-label={`Effacer le suivi ${job.account.toUpperCase()}`} title="Effacer le suivi dans le Studio" onClick={() => { setResetError(""); setResetTarget(job); }}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7" /></svg></button></div>;
+    return <div className="instagram-clear-status"><span>{publicationFlags[job.account]} {job.publishedAt ? `Publié le ${publicationDate(job.publishedAt)}` : "Publié"}</span><button type="button" disabled={busy} aria-label={`Effacer le suivi ${job.account.toUpperCase()}`} title="Effacer le suivi dans le Studio" onClick={() => { setResetError(""); setResetTarget(job); }}><Icon name="delete" /></button></div>;
   }
-  if (resetTarget) return <div className="instagram-publication-editor" aria-busy={busy}><header><h3>Effacer le suivi {publicationFlags[resetTarget.account]}</h3></header><div className="instagram-reset-confirm"><p>La date de publication de ce compte sera effacée dans le Studio.</p><p><strong>Le post restera sur Instagram.</strong> Pour le retirer, supprime-le ou archive-le manuellement sur Instagram.</p>{resetTarget.permalink && <a href={resetTarget.permalink} target="_blank" rel="noreferrer">Ouvrir le post sur Instagram</a>}<p>Tu pourras ensuite publier à nouveau depuis le Studio.</p>{resetError && <p role="alert" className="planner-error">{resetError}</p>}</div><footer><button disabled={busy} onClick={() => setResetTarget(null)}>Annuler</button><button className="planner-primary" disabled={busy} onClick={async () => {setBusy(true); try {await resetInstagramPublication(resetTarget); close();} catch (failure) {setResetError(errorMessage(failure));} finally {if (mounted.current) setBusy(false);}}}>{busy ? "Effacement…" : "Effacer le suivi"}</button></footer></div>;
+  if (resetTarget) return <div className="instagram-publication-editor" aria-busy={busy}><header><h3>Effacer le suivi {publicationFlags[resetTarget.account]}</h3></header><div className="instagram-reset-confirm"><p>La date de publication de ce compte sera effacée dans le Studio.</p><p><strong>Le post restera sur Instagram.</strong> Pour le retirer, supprime-le ou archive-le manuellement sur Instagram.</p>{resetTarget.permalink && <a href={resetTarget.permalink} target="_blank" rel="noreferrer">Ouvrir le post sur Instagram</a>}<p>Tu pourras ensuite publier à nouveau depuis le Studio.</p>{resetError && <p role="alert" className="planner-error">{resetError}</p>}</div><footer><button disabled={busy} onClick={() => setResetTarget(null)}>Annuler</button><Button variant="primary" className="planner-primary" disabled={busy} onClick={async () => {setBusy(true); try {await resetInstagramPublication(resetTarget); close();} catch (failure) {setResetError(errorMessage(failure));} finally {if (mounted.current) setBusy(false);}}}>{busy ? "Effacement…" : "Effacer le suivi"}</Button></footer></div>;
   const remaining = selected.filter((account) => jobs[account]?.status !== "published");
   const ready = valid && initial !== null && !historyError && remaining.length > 0 && remaining.every((id) => Boolean(previews[id]) && [...captions[id]].length <= 2200);
   const publishedCount = Object.values(jobs).filter((job) => job?.status === "published").length;
   return <div className="instagram-publication-editor" aria-busy={busy}>
-    <header><div><h3>{recap ? "Résultat de la publication" : "Préparer la publication"}</h3><p>{creation?.name || "Publication"}</p></div><button type="button" disabled={busy} aria-label="Fermer la publication" onClick={close}>✕</button></header>
+    <header><div><h3>{recap ? "Résultat de la publication" : "Préparer la publication"}</h3><p>{creation?.name || "Publication"}</p></div><button type="button" disabled={busy} aria-label="Fermer la publication" onClick={close}><Icon name="close" /></button></header>
     {recap ? <>
       {busy && running && <p className="instagram-sequence" role="status">{creation?.name || "Publication"} · Compte {sequence.index} sur {sequence.total} · {PUBLICATION_ACCOUNTS.find(({id}) => id === running)?.label}</p>}
       <div className="instagram-results" role="status" aria-live="polite">{PUBLICATION_ACCOUNTS.filter(({id}) => targets.includes(id)).map(({id, label, username}) => {
@@ -150,7 +152,7 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
           {!success && <button disabled={busy || historyError} onClick={() => void send([id])}>{result?.status === "uncertain" || result?.status === "pending" ? "Vérifier le résultat" : "Réessayer"}</button>}
         </article>;
       })}</div>
-      <footer><button disabled={busy} onClick={() => setRecap(false)}>Retour</button><button className="planner-primary" disabled={busy} onClick={close}>Fermer</button></footer>
+      <footer><button disabled={busy} onClick={() => setRecap(false)}>Retour</button><Button variant="primary" className="planner-primary" disabled={busy} onClick={close}>Fermer</Button></footer>
     </> : <>
       <section><SectionHeading><h2>Publier sur Instagram</h2></SectionHeading>
         {!valid && <p className="planner-help">Choisis un post contenant de 1 à 10 pages disponibles.</p>}
@@ -166,7 +168,7 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
           </> : <div className="instagram-language-empty" aria-label="Compte non sélectionné" /> }
         </article>)}</div>}
         <p className="planner-help">{pages.length > 1 ? "Seule la première page est affichée ; les autres seront générées lors de la publication. La légende est commune au carrousel ; elle reprend par défaut celle de la première page. " : ""}Les aperçus utilisent les traductions disponibles. Les textes vides sont acceptés.</p>
-        <div className="instagram-publish-actions"><button className="planner-primary" disabled={!ready || busy || disabled} onClick={() => void send(remaining)}>{remaining.length ? `Publier sur ${remaining.length} compte${remaining.length > 1 ? "s" : ""}` : "Sélectionne un compte à publier"}</button>
+        <div className="instagram-publish-actions"><Button variant="primary" className="planner-primary" disabled={!ready || busy || disabled} onClick={() => void send(remaining)}>{remaining.length ? `Publier sur ${remaining.length} compte${remaining.length > 1 ? "s" : ""}` : "Sélectionne un compte à publier"}</Button>
           <div className="instagram-account-checks">{PUBLICATION_ACCOUNTS.map(({id, label}) => <label key={id}><input type="checkbox" checked={selected.includes(id)} disabled={busy} onChange={(event) => setSelected((old) => event.target.checked ? [...old, id] : old.filter((key) => key !== id))} />{label}</label>)}</div>
         </div>
         {publishedCount > 0 && <button onClick={() => { setTargets(PUBLICATION_ACCOUNTS.filter(({id}) => jobs[id]).map(({id}) => id)); setRecap(true); }}>Voir les résultats par compte</button>}

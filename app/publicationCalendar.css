@@ -8,7 +8,6 @@
 .publication-calendar .planner-primary, .planner-switch button[aria-pressed=true] { background: #7652a8; color: white; border-color: #7652a8; }
 .planner-heading, .planner-toolbar, .planner-month-nav, .planner-dialog header { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .planner-heading, .planner-dialog header { justify-content: space-between; }
-.planner-heading h2 { margin: 0; font-size: 28px; }
 .planner-heading p, .planner-help, .planner-undated p { color: #817589; font-size: 14px; line-height: 1.5; }
 .planner-toolbar { margin: 20px 0; }
 .planner-toolbar input, .planner-entry-dialog input { border: 1px solid #ded5e8; border-radius: 10px; background: white; padding: 10px; color: #352440; }
@@ -31,15 +30,8 @@
 .planner-card[draggable=true] { cursor: grab; }
 .publication-calendar .planner-card-open { display: flex; width: 100%; gap: 8px; text-align: left; border: 0; padding: 7px; color: #382d41; font-size: 12px; align-items: start; font-weight: normal; }
 
-.planner-card strong { overflow-wrap: anywhere; font-size: 12px; }
-.planner-card small { color: #817589; font-size: 10px; }
-.publication-calendar .planner-preview { pointer-events: none; overflow: hidden; flex-shrink: 0; width: 45px; border-radius: 4px; }
-.planner-badge { display: inline-block; align-self: start; border-radius: 6px; padding: 4px 6px; background: #f0e7fa; color: #7652a8; font-size: 10px; font-weight: 700; }
-
 .planner-order-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
-.planner-order-list .planner-preview { width: 85px; }
 .planner-order-list .planner-card-open { padding: 12px; }
-.planner-order-list .planner-card strong { font-size: 15px; }
 .planner-order-actions { display: flex; justify-content: end; gap: 5px; padding: 0 8px 8px; }
 .planner-empty { text-align: center; padding: 50px; color: #817589; }
 .planner-dialog { position: fixed; inset: 0; margin: auto; height: fit-content; overflow-y: auto; border: 1px solid #e0d5ec; border-radius: 20px; padding: 24px; width: min(1000px, 94vw); max-height: 88vh; color: #382d41; box-shadow: 0 20px 90px #24173233; }
@@ -49,15 +41,11 @@
 .planner-folder { padding: 0 0 20px; }
 .planner-folder > .section-heading { cursor: pointer; padding: 12px 24px; margin: 0 -24px 16px; gap: 12px; list-style: none; }
 .planner-folder > summary::-webkit-details-marker { display: none; }
-.planner-folder > summary::before { content: "›"; color: var(--purple); font-size: 24px; transform: rotate(0deg); }
-.planner-folder[open] > summary::before { transform: rotate(90deg); }
 .planner-folder > summary h2 { flex: 1; }
 .planner-picker-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; margin-top: 12px; }
 .publication-calendar .planner-picker-post { text-align: left; display: flex; flex-direction: column; align-items: start; gap: 8px; padding: 12px; color: #382d41; }
 .planner-picker-post:hover { border-color: #7652a8; background: #fcf9ff; }
 .planner-picker-post > small { color: #817589; }
-.planner-picker-cover { position: relative; width: 100%; overflow: hidden; border-radius: 8px; }
-.publication-calendar .planner-picker-cover .planner-preview { width: 100%; }
 .planner-entry-dialog { width: min(460px, 94vw); }
 .planner-entry-dialog header { margin-bottom: 20px; }
 .planner-entry-dialog label { display: grid; gap: 8px; margin: 16px 0; }
@@ -98,11 +86,7 @@
 .planner-day .planner-card { height: var(--planner-tile-height); margin: 0; box-sizing: border-box; }
 .planner-unscheduled-grid .planner-card-open,
 .planner-day .planner-card-open { height: 100%; padding: 38px 8px 8px; gap: 6px; }
-.planner-unscheduled-grid .planner-picker-cover,
-.planner-day .planner-picker-cover { height: calc(var(--planner-tile-height) - 120px); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
 .publication-calendar :is(.planner-unscheduled-grid, .planner-day) .planner-preview { width: min(100%, calc((var(--planner-tile-height) - 120px) * .8)); }
-.planner-unscheduled-grid .planner-badge,
-.planner-day .planner-badge { max-width: 100%; font-size: 10px; }
 .planner-unscheduled-grid .planner-card-open > small,
 .planner-day .planner-card-open > small { font-size: 10px; }
 

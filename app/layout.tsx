@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./components/studio.css";
 
 export const metadata: Metadata = {
   title: "DailyDish Ad Studio",

@@ -1,4 +1,7 @@
 "use client";
+import { Button } from "./components/Button";
+import { PageHeader, Icon } from "./components";
+import { SectionHeading } from "./SectionHeading";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createCampaignFolder, subscribeToCampaignFolders, type CampaignFolder } from "../firebase/campaignFolders";
@@ -203,24 +206,16 @@ export function CampaignManager({
 
   return (
     <section className="campaign-page" aria-label="Gestion des campagnes">
-      <div className="campaign-page-header">
-        <div>
-          <p>Contenus multilingues</p>
-          <h2>Campagnes</h2>
-          <span>
-            Préparez une seule campagne, puis déclinez-la en français, anglais
-            et portugais.
-          </span>
-        </div>
-        <button
+      <PageHeader title="Campagnes" description="Prépare tes contenus en anglais, français et portugais.">
+        <Button variant="primary"
           className="campaign-primary-button"
           type="button"
           disabled={isCreating}
           onClick={() => void createNewCampaign()}
         >
-          {isCreating ? "Création…" : "+ Nouvelle campagne"}
-        </button>
-      </div>
+          <Icon name="add" />{isCreating ? "Création…" : "Nouvelle campagne"}
+        </Button>
+      </PageHeader>
 
       {errorMessage && <p className="campaign-system-error">{errorMessage}</p>}
 
@@ -249,12 +244,12 @@ export function CampaignManager({
                 if (campaign) void moveToFolder(campaign, folder.id);
               }}
             >
-              <span aria-hidden="true">{folder.id ? "📁" : "⌂"}</span><span>{folder.name}</span>
+              <Icon name={folder.id ? "folder" : "home"} /><span>{folder.name}</span>
               <small>{campaigns.filter((campaign) => (campaign.folderId ?? "") === folder.id).length}</small>
             </button>
           ))}
         </nav>
-        <button className="gallery-new-folder" type="button" disabled={foldersLoading} onClick={() => setShowFolderForm(true)}>+ Nouveau dossier</button>
+        <button className="gallery-new-folder" type="button" disabled={foldersLoading} onClick={() => setShowFolderForm(true)}><Icon name="folder" />Nouveau dossier</button>
       </div>
       {showFolderForm && (
         <form className="gallery-folder-form" onSubmit={(event) => { event.preventDefault(); void addFolder(); }}>
@@ -270,10 +265,10 @@ export function CampaignManager({
 
       <div className="campaign-layout">
         <aside className="campaign-list" aria-label="Liste des campagnes">
-          <div className="campaign-list-heading">
+          <SectionHeading className="campaign-list-heading">
             <strong>{currentFolderName}</strong>
-            <span>{visibleCampaigns.length}</span>
-          </div>
+            <small>{visibleCampaigns.length}</small>
+          </SectionHeading>
 
           {loading ? (
             <p className="campaign-list-message">Chargement…</p>
@@ -309,7 +304,7 @@ export function CampaignManager({
                     aria-label={`Supprimer ${campaignTitle}`}
                     title="Supprimer la campagne"
                   >
-                    <span className="trash-icon" aria-hidden="true" />
+                    <Icon name="delete" />
                   </button>
                 </div>
               );
@@ -320,7 +315,7 @@ export function CampaignManager({
         <div className="campaign-editor">
           {!draft ? (
             <div className="campaign-empty-editor">
-              <div className="campaign-empty-icon">✦</div>
+              <div className="campaign-empty-icon"><Icon name="edit" /></div>
               <h3>{campaigns.length ? "Sélectionnez une campagne" : "Créez votre première campagne"}</h3>
               <p>
                 Vous pourrez ensuite rédiger le titre et la description dans
@@ -393,14 +388,14 @@ export function CampaignManager({
 
               <div className="campaign-editor-actions">
                 <span aria-live="polite">{localMessage}</span>
-                <button
+                <Button variant="secondary"
                   className="campaign-secondary-button"
                   type="button"
                   disabled={isSaving}
                   onClick={() => void persistDraft()}
                 >
                   {isSaving ? "Enregistrement…" : "Enregistrer"}
-                </button>
+                </Button>
               </div>
             </>
           )}

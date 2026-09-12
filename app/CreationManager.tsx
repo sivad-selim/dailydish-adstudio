@@ -1,4 +1,7 @@
 "use client";
+import { Button } from "./components/Button";
+import { PageHeader, Icon } from "./components";
+import { SectionHeading } from "./SectionHeading";
 
 import { useEffect, useRef, useState } from "react";
 import { CAMPAIGN_LANGUAGES, type Campaign } from "../firebase/campaigns";
@@ -276,25 +279,18 @@ export function CreationManager({
         if (draggedCreationId) updateAutoScroll(event.clientY);
       }}
     >
-      <header className="creation-page-header">
-        <div>
-          <p>Visuels publicitaires</p>
-          <h2>Créations</h2>
-          <span>
-            Chaque création conserve sa campagne et tous ses réglages.
-          </span>
-        </div>
+      <PageHeader title="Créations" description="Retrouve tes visuels et leurs réglages.">
         <div className="creation-page-header-actions">
-          <button
+          <Button variant="secondary"
             className="campaign-secondary-button"
             type="button"
             disabled={isCreatingFolder}
             onClick={() => void startCreatingFolder()}
           >
-            {isCreatingFolder ? "Création…" : "+ Nouveau dossier"}
-          </button>
+            <Icon name="folder" />{isCreatingFolder ? "Création…" : "Nouveau dossier"}
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {(errorMessage || localError) && (
         <p className="campaign-system-error" role="alert">
@@ -306,7 +302,7 @@ export function CreationManager({
         <div className="creation-empty-state">Chargement des créations…</div>
       ) : creations.length === 0 && folders.length === 0 ? (
         <div className="creation-empty-state">
-          <div className="creation-empty-symbol">✦</div>
+          <div className="creation-empty-symbol"><Icon name="folder" /></div>
           <h3>Créez votre premier visuel</h3>
           <p>
             Ouvrez une création vierge, puis choisissez son nom, sa campagne et
@@ -341,9 +337,9 @@ export function CreationManager({
                   void moveCreation(creationId, group.id);
                 }}
               >
-                <header className="creation-folder-header">
+                <SectionHeading as="header" className="creation-folder-header">
                   <div className="creation-folder-title">
-                    <span className="creation-folder-icon" aria-hidden="true" />
+                    <Icon name="folder" />
                     <h3>{group.name}</h3>
                   </div>
                   <div className="creation-folder-actions">
@@ -367,7 +363,7 @@ export function CreationManager({
                           aria-label={`Renommer le dossier ${group.name}`}
                           title="Renommer le dossier"
                         >
-                          <span className="pencil-icon" aria-hidden="true" />
+                          <Icon name="edit" />
                         </button>
                         <button
                           className="creation-folder-delete-button"
@@ -377,7 +373,7 @@ export function CreationManager({
                           aria-label={`Supprimer le dossier ${group.name}`}
                           title="Supprimer le dossier"
                         >
-                          <span className="trash-icon" aria-hidden="true" />
+                          <Icon name="delete" />
                         </button>
                       </>
                     )}
@@ -391,13 +387,10 @@ export function CreationManager({
                         {group.creations.length} création
                         {group.creations.length === 1 ? "" : "s"}
                       </small>
-                      <span
-                        className={`creation-folder-chevron ${isCollapsed ? "collapsed" : ""}`}
-                        aria-hidden="true"
-                      />
+                      <Icon name="expand_more" className={`studio-folder-chevron ${isCollapsed ? "collapsed" : ""}`} />
                     </button>
                   </div>
-                </header>
+                </SectionHeading>
 
                 {!isCollapsed && group.creations.length === 0 && (
                   <div className="creation-folder-empty">
@@ -487,7 +480,7 @@ export function CreationManager({
                       aria-label={`Supprimer ${creation.name}`}
                       title="Supprimer la création"
                     >
-                      <span className="trash-icon" aria-hidden="true" />
+                      <Icon name="delete" />
                     </button>
                   </div>
                 </div>

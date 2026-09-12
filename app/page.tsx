@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "./components";
 
 import { exportCanvasPng } from "./exportCanvasPng";
 import { duplicatePostFolder } from "../firebase/duplicatePostFolder";
@@ -1461,7 +1462,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             aria-label={`Dupliquer la page ${pageIndex + 1}`}
             title="Dupliquer la page"
           >
-            <span className="material-action-icon material-action-copy" aria-hidden="true" />
+            <Icon name="content_copy" />
           </button>
           <button
             type="button"
@@ -1472,7 +1473,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             aria-label={`Supprimer la page ${pageIndex + 1}`}
             title="Supprimer la page"
           >
-            <span className="trash-icon" aria-hidden="true" />
+            <Icon name="delete" />
           </button>
           </div>
         </div>
@@ -1518,7 +1519,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
           </div>
         </div>
         <div className="studio-navigation-group">
-          <button type="button" className={`studio-settings-button ${appView === "settings" ? "selected" : ""}`} aria-label="Réglages" title="Réglages" aria-pressed={appView === "settings"} onClick={() => navigateToView("settings")}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14.7 6.3a5 5 0 0 0-6.4 6.4L3 18a2.1 2.1 0 0 0 3 3l5.3-5.3a5 5 0 0 0 6.4-6.4l-3 3-3-3z" /></svg></button>
+          <button type="button" className={`studio-settings-button ${appView === "settings" ? "selected" : ""}`} aria-label="Réglages" title="Réglages" aria-pressed={appView === "settings"} onClick={() => navigateToView("settings")}><Icon name="build" /></button>
         <nav className="studio-navigation" aria-label="Navigation principale">
           <button type="button" className={`calendar-nav ${appView === "calendar" ? "selected" : ""}`} aria-pressed={appView === "calendar"} onClick={() => navigateToView("calendar")}>Calendrier</button>
           <button
@@ -1667,7 +1668,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
         <aside className="control-panel" aria-label="Réglages de la publicité">
           <div className="creation-editor-context">
             <button type="button" onClick={() => navigateToView("creations")}>
-              <span className="back-chevron" aria-hidden="true">‹</span>
+              <Icon name="chevron_left" />
               <span>Retour</span>
             </button>
           </div>
@@ -2260,7 +2261,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                           aria-label={`Supprimer l’image ${index + 1}`}
                           title="Supprimer l’image"
                         >
-                          <span className="trash-icon" aria-hidden="true" />
+                          <Icon name="delete" />
                         </button>
                       </div>
 

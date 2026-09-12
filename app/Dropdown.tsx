@@ -1,5 +1,6 @@
 "use client";
 
+import { Icon } from "./components/Icon";
 import type { SelectHTMLAttributes } from "react";
 
 type DropdownProps = SelectHTMLAttributes<HTMLSelectElement> & {
@@ -20,7 +21,7 @@ export function Dropdown({
       >
         {children}
       </select>
-      <span className="dropdown-chevron" aria-hidden="true" />
+      <Icon name="expand_more" className="dropdown-chevron" />
     </span>
   );
 }

@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "../app/globals.css";
 import { AuthGate } from "./AuthGate";
+import "../app/components/studio.css";
 
 const root = document.getElementById("root");
 

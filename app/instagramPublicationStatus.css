@@ -1,8 +1,5 @@
-.instagram-status-list { display: flex; align-items: center; gap: 6px; width: 100%; color: #69419a; font-size: 11px; text-align: left; line-height: 1.35; }
-.instagram-status-flag { font-size: 16px; }
-.publication-calendar :is(.planner-unscheduled-grid, .planner-day) .instagram-status-list { width: min(100%, calc((var(--planner-tile-height) - 120px) * .8)); align-self: center; }
-.instagram-publication-editor .instagram-clear-status { display: flex; gap: 8px; align-items: center; color: #69419a; font-size: 12px; }
-.instagram-clear-status button svg { width: 17px; height: 17px; }
+.instagram-status-list { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--studio-accent); font-size: var(--studio-meta); text-align: left; line-height: 1.5; }
+.instagram-status-flag { font-size: 16px; line-height: 1; }
+.instagram-status-unpublished { color: var(--studio-muted); }
+.instagram-publication-editor .instagram-clear-status { display: flex; gap: 8px; align-items: center; color: var(--studio-accent); font-size: var(--studio-meta); }
 .instagram-publication-editor .instagram-reset-confirm { padding: 24px 0; }
-
-.instagram-status-unpublished { color: #817589; }

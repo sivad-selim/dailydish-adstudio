@@ -1,4 +1,10 @@
 "use client";
+import { Button } from "./components/Button";
+import { CreationCanvasPreview } from "./CreationCanvasPreview";
+export { CreationCanvasPreview } from "./CreationCanvasPreview";
+import { PostPreview } from "./components/PostPreview";
+import { PageHeader, Icon } from "./components";
+import { SectionHeading } from "./SectionHeading";
 
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
@@ -6,41 +12,23 @@ import { exportCanvasPng } from "./exportCanvasPng";
 import { orderFolderPosts, movePostInOrder } from "./postOrder";
 import { getFolderPngEntries } from "./folderPngExport";
 import {
-  type CSSProperties,
   type DragEvent as ReactDragEvent,
-  type PointerEvent as ReactPointerEvent,
-  type Ref,
   type RefObject,
   useEffect,
   useRef,
   useState,
 } from "react";
-import { CAMPAIGN_LANGUAGES, type Campaign, type CampaignLanguage } from "../firebase/campaigns";
+import { CAMPAIGN_LANGUAGES, type Campaign } from "../firebase/campaigns";
 import type { CreationFolder } from "../firebase/creationFolders";
-import { TEXT_SPACING, getImageAssetId, type Creation } from "../firebase/creations";
+import { type Creation } from "../firebase/creations";
 import type { GalleryAsset } from "../firebase/gallery";
 import type { StudioPost, StudioPostType } from "../firebase/posts";
-import { InstagramPublicationStatus, useInstagramHistory } from "./InstagramPublicationStatus";
-import { CanvasBackgroundImage } from "./CanvasBackgroundImage";
+import { useInstagramHistory } from "./InstagramPublicationStatus";
 import {
   DRAG_AUTO_SCROLL_EDGE,
   DRAG_AUTO_SCROLL_MAX_SPEED,
 } from "./dragScroll";
-import { ThemeableBackgroundArtwork } from "./ThemeableBackgroundArtwork";
-import {
-  getBackgroundColorStyle,
-  getDefaultBackgroundColors,
-  getDefaultTextColors,
-  getTextColorStyle,
-  getThemeStyle,
-  isDarkColor,
-  resolveBackgroundColors,
-  resolveTextColors,
-} from "./themePalettes";
 
-const IMAGE_BASE_WIDTH = 47;
-const BACKGROUND_PALETTE_SHAPE_COUNT = 4;
-const PHONE_FRAME_CONTROLS_MIN_SCALE = 62;
 const UNFILED_DROP_KEY = "__unfiled__";
 
 export type PostListViewState = { expandedPostId: string; collapsedFolderKeys: string[] };
@@ -89,184 +77,6 @@ const getCampaignContent = (
     description: translation?.description.trim() ?? "",
   };
 };
-
-export function CreationCanvasPreview({
-  creation,
-  campaignTitle,
-  campaignDescription,
-  galleryAssets,
-  language = "fr",
-  showPlaceholder = true,
-  interactive = false,
-  previewWidth,
-  rootRef,
-  onImagePointerDown,
-  onImagePointerMove,
-  onImagePointerUp,
-  onImagePointerCancel,
-}: {
-  creation: Creation;
-  campaignTitle: string;
-  campaignDescription: string;
-  galleryAssets: GalleryAsset[];
-  language?: CampaignLanguage;
-  showPlaceholder?: boolean;
-  interactive?: boolean;
-  previewWidth?: number;
-  rootRef?: Ref<HTMLDivElement>;
-  onImagePointerDown?: (
-    event: ReactPointerEvent<HTMLDivElement>,
-    image: Creation["properties"]["images"][number],
-  ) => void;
-  onImagePointerMove?: (event: ReactPointerEvent<HTMLDivElement>) => void;
-  onImagePointerUp?: () => void;
-  onImagePointerCancel?: () => void;
-}) {
-  const backgroundAsset = galleryAssets.find(
-    (asset) => asset.id === creation.backgroundAssetId,
-  );
-  const backgroundImageUrl = backgroundAsset?.url ?? "";
-  const activeBackgroundColors = resolveBackgroundColors(
-    creation.properties.backgroundColors,
-    getDefaultBackgroundColors(
-      creation.theme,
-      BACKGROUND_PALETTE_SHAPE_COUNT,
-    ),
-  );
-  const darkTextBackdrop =
-    creation.properties.textBackdrop === "gradient-dark" ||
-    creation.properties.textBackdrop === "band-dark" ||
-    isDarkColor(activeBackgroundColors.base);
-  const thumbnailTextColors = resolveTextColors(
-    creation.properties.textColors,
-    getDefaultTextColors(creation.theme, darkTextBackdrop),
-  );
-  const themeStyle = {
-    ...getThemeStyle(creation.theme),
-    ...getBackgroundColorStyle(activeBackgroundColors),
-    ...getTextColorStyle(thumbnailTextColors),
-    "--theme-label-bg":
-      creation.properties.assistantBackgroundColor ||
-      activeBackgroundColors.base,
-  };
-  const [textVerticalPosition, textHorizontalPosition] =
-    creation.properties.textPosition.split("-");
-
-  return (
-    <div
-      ref={rootRef}
-      className={`creation-preview-canvas ad-canvas format-${creation.format} theme-${creation.theme} background-${creation.background} ${backgroundImageUrl ? "background-illustrated background-gallery-image" : ""}`}
-      style={
-        {
-          ...(previewWidth ? { "--preview-width": `${previewWidth}px` } : {}),
-          ...themeStyle,
-        } as CSSProperties
-      }
-      aria-hidden={interactive ? undefined : true}
-    >
-      {backgroundImageUrl && (
-        <CanvasBackgroundImage
-          assetId={creation.backgroundAssetId}
-          positionY={creation.properties.backgroundPositionY}
-          url={backgroundImageUrl}
-        />
-      )}
-      {!backgroundImageUrl && (
-        <ThemeableBackgroundArtwork background={creation.background} />
-      )}
-      <div className="blob blob-green" />
-      <div className="blob blob-purple" />
-      <div className="blob blob-blue" />
-
-      <div
-        className={`ad-copy text-row-${textVerticalPosition} text-align-${textHorizontalPosition} text-backdrop-${creation.properties.textBackdrop} ${creation.properties.showAssistantLabel ? "with-assistant" : "without-assistant"} ${campaignDescription ? "with-description" : "without-description"}`}
-        style={
-          {
-            "--text-width": `${creation.properties.textWidth}%`,
-            "--text-margin-x": `${creation.properties.textMarginHorizontal}cqw`,
-            "--text-margin-y": `${creation.properties.textMarginVertical}cqw`,
-            "--text-rotation": `${creation.properties.textRotation}deg`,
-            "--text-surface-padding": `${TEXT_SPACING}cqw`,
-          } as CSSProperties
-        }
-      >
-        <span className="text-backdrop-surface" aria-hidden="true" />
-        {creation.properties.showAssistantLabel && (
-          <div className="assistant-label">
-            <span aria-hidden="true">✦</span>
-            <span className="assistant-label-text">Assistant DailyDish</span>
-          </div>
-        )}
-        {(campaignTitle || showPlaceholder) && <h2 className={campaignTitle.length > 58 ? "long-title" : ""}>
-          {campaignTitle || "Votre titre"}
-        </h2>}
-        {campaignDescription && <p>{campaignDescription}</p>}
-      </div>
-
-      {creation.properties.images.map((image, imageIndex) => {
-        const asset = galleryAssets.find(
-          (galleryAsset) => galleryAsset.id === getImageAssetId(image, language),
-        );
-        const width = (IMAGE_BASE_WIDTH * image.scale) / 100;
-        const shadowOpacity =
-          image.shadowDistance === 0 ? 0 : image.shadowStrength * 0.006;
-        const shadowBlur = image.shadowDistance * 0.24;
-        return (
-          <div
-            key={image.id}
-            className={`canvas-image-object ${image.frame ? "with-phone-frame" : "without-phone-frame"} ${image.frame && image.scale >= PHONE_FRAME_CONTROLS_MIN_SCALE ? "show-phone-frame-controls" : ""} ${image.aboveText ? "above-text" : "below-text"} ${asset ? "has-image" : "is-empty"}`}
-            style={
-              {
-                "--image-x": `${image.x}cqw`,
-                "--image-y": `${image.y}cqw`,
-                "--image-width": `${width}cqw`,
-                "--image-rotation": `${image.rotation}deg`,
-                "--image-shadow-blur": `${shadowBlur}cqw`,
-                "--image-shadow-color": `rgba(21, 33, 20, ${shadowOpacity})`,
-                zIndex: image.aboveText ? 8 + (image.foregroundOrder ?? 0) : 4,
-              } as CSSProperties
-            }
-            aria-label={
-              interactive ? `Déplacer l’image ${imageIndex + 1}` : undefined
-            }
-            onPointerDown={
-              interactive && onImagePointerDown
-                ? (event) => onImagePointerDown(event, image)
-                : undefined
-            }
-            onPointerMove={interactive ? onImagePointerMove : undefined}
-            onPointerUp={interactive ? onImagePointerUp : undefined}
-            onPointerCancel={interactive ? onImagePointerCancel : undefined}
-          >
-            <div className="canvas-image-viewport">
-              {asset ? (
-                <img
-                  className="canvas-image"
-                  src={asset.url}
-                  data-gallery-asset-id={asset.id}
-                  alt=""
-                  draggable={false}
-                />
-              ) : (
-                <div className="image-placeholder">
-                  <img src="/brand/add-photo.png" alt="" />
-                  <strong>Choisissez une image</strong>
-                </div>
-              )}
-            </div>
-            {image.frame && (
-              <div className="phone-frame-controls" aria-hidden="true">
-                <span />
-                <span />
-                <i />
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 export function PostManager({
   viewStateRef,
@@ -741,7 +551,6 @@ export function PostManager({
   const renderPostCard = (post: StudioPost) => {
     const pages = pagesForPost(post);
     const firstPage = pages[0];
-    const content = getCampaignContent(firstPage, campaigns);
     const isGallery = post.type === "gallery";
     return (
       <article
@@ -763,51 +572,11 @@ export function PostManager({
         }}
       >
         {isGallery && galleryDropZone(post)}
-        <div className="post-card-preview">
-          <button
-            type="button"
-            className="creation-preview"
-            onClick={() => {
-              if (isGallery) {
-                if (firstPage) onEditPost(post);
-              } else if (firstPage) {
-                onOpenPage(firstPage.id);
-              }
-            }}
-            aria-label={isGallery ? "Modifier le post galerie" : "Modifier le post"}
-          >
-            {firstPage ? (
-              <CreationCanvasPreview
-                creation={firstPage}
-                campaignTitle={content.title}
-                campaignDescription={content.description}
-                language={content.language}
-                galleryAssets={galleryAssets}
-              />
-            ) : (
-              <span className="post-empty-preview">Aucune page</span>
-            )}
-          </button>
-          {isGallery && (
-            <button
-              type="button"
-              className="post-gallery-badge"
-              onClick={() =>
-                setExpandedPostId((current) =>
-                  current === post.id ? "" : post.id,
-                )
-              }
-              aria-label="Afficher les pages du post galerie"
-              aria-expanded={expandedPostId === post.id}
-            >
-              <i />
-              <i />
-            </button>
-          )}
-        </div>
-        <div className="creation-card-body">
-          <InstagramPublicationStatus items={instagramHistory.items.filter((item) => item.postId === post.id)} status={instagramHistory.status} />
-          <div className="creation-card-actions">
+        <PostPreview creation={firstPage} campaigns={campaigns} galleryAssets={galleryAssets} gallery={isGallery}
+          publications={instagramHistory.items.filter((item) => item.postId === post.id)} status={instagramHistory.status}
+          onOpen={() => { if (firstPage) { if (isGallery) onEditPost(post); else onOpenPage(firstPage.id); } }}
+          onToggleGallery={isGallery ? () => setExpandedPostId((current) => current === post.id ? "" : post.id) : undefined}
+          expanded={expandedPostId === post.id} actions={<>
             <button
               className="creation-duplicate-button"
               type="button"
@@ -816,7 +585,7 @@ export function PostManager({
               disabled={duplicatingPostId === post.id}
               onClick={() => void duplicatePost(post)}
             >
-              <span className="material-action-icon material-action-copy" aria-hidden="true" />
+              <Icon name="content_copy" />
             </button>
             <button
               className="creation-delete-button"
@@ -826,10 +595,8 @@ export function PostManager({
               aria-label="Supprimer le post"
               title="Supprimer le post"
             >
-              <span className="trash-icon" aria-hidden="true" />
-            </button>
-          </div>
-        </div>
+              <Icon name="delete" />
+            </button></>} />
       </article>
     );
   };
@@ -854,7 +621,7 @@ export function PostManager({
           }}
         >
           <div>
-            <span className="post-gallery-inline-icon" aria-hidden="true"><i /><i /></span>
+            <Icon name="collections" />
             <div>
               <small>Post galerie · {pages.length} page{pages.length === 1 ? "" : "s"}</small>
               <h3>{firstContent.title || "Galerie sans campagne"}</h3>
@@ -867,7 +634,7 @@ export function PostManager({
               disabled={addingPagePostId === post.id}
               onClick={() => void addPage(post)}
             >
-              {addingPagePostId === post.id ? "Ajout…" : "+ Ajouter une page"}
+              <Icon name="add" />{addingPagePostId === post.id ? "Ajout…" : "Ajouter une page"}
             </button>
             <button
               type="button"
@@ -875,16 +642,16 @@ export function PostManager({
               disabled={pages.length === 0}
               onClick={() => onEditPost(post)}
             >
-              <span className="pencil-icon" aria-hidden="true" />
-              Edit
+              <Icon name="edit" />
+              Modifier
             </button>
             <button
               type="button"
               className="gallery-post-close-button"
               onClick={() => setExpandedPostId("")}
             >
-              <span aria-hidden="true">×</span>
-              Close
+              <Icon name="close" />
+              Fermer
             </button>
           </div>
         </header>
@@ -898,7 +665,7 @@ export function PostManager({
               className="campaign-primary-button"
               onClick={() => void addPage(post)}
             >
-              + Ajouter une page
+              <Icon name="add" /> Ajouter une page
             </button>
           </div>
         ) : (
@@ -961,7 +728,7 @@ export function PostManager({
                   }}
                 >
                   <div className="gallery-page-order" title="Glissez pour réordonner ou sortir cette page de la galerie">
-                    <span aria-hidden="true">⠿</span>
+                    <Icon name="drag_indicator" />
                     <strong>{index + 1}</strong>
                   </div>
                   <button
@@ -995,23 +762,18 @@ export function PostManager({
         if (draggedPostId || draggedPageId) updateAutoScroll(event.clientY);
       }}
     >
-      <header className="creation-page-header">
-        <div>
-          <p>Visuels publicitaires</p>
-          <h2>Posts</h2>
-          <span>Chaque post contient une image unique ou plusieurs pages de galerie.</span>
-        </div>
+      <PageHeader title="Posts" description="Crée et organise tes images et tes galeries.">
         <div className="creation-page-header-actions">
-          <button
+          <Button variant="secondary"
             className="campaign-secondary-button"
             type="button"
             disabled={isCreatingFolder}
             onClick={() => void createFolder()}
           >
-            {isCreatingFolder ? "Création…" : "+ Nouveau dossier"}
-          </button>
+            <Icon name="folder" />{isCreatingFolder ? "Création…" : "Nouveau dossier"}
+          </Button>
         </div>
-      </header>
+      </PageHeader>
 
       {(errorMessage || localError) && (
         <p className="campaign-system-error" role="alert">{localError || errorMessage}</p>
@@ -1031,7 +793,7 @@ export function PostManager({
         <div className="creation-empty-state">Chargement des posts…</div>
       ) : posts.length === 0 && folders.length === 0 ? (
         <div className="creation-empty-state">
-          <div className="creation-empty-symbol">✦</div>
+          <div className="creation-empty-symbol"><Icon name="folder" /></div>
           <h3>Créez votre premier dossier</h3>
           <p>Les nouveaux posts sont toujours créés à l’intérieur d’un dossier.</p>
         </div>
@@ -1069,9 +831,9 @@ export function PostManager({
                   );
                 }}
               >
-                <header className="creation-folder-header">
+                <SectionHeading as="header" className="creation-folder-header">
                   <div className="creation-folder-title">
-                    <span className="creation-folder-icon" aria-hidden="true" />
+                    <Icon name="folder" />
                     <h3>{group.name}</h3>
                   </div>
                   <div className="creation-folder-actions">
@@ -1094,7 +856,7 @@ export function PostManager({
                           type="button"
                           onClick={() => setPostTypeFolderId(group.id)}
                         >
-                          + Nouveau post
+                          <Icon name="add" /> Nouveau post
                         </button>
                         <button
                           className="creation-folder-edit-button"
@@ -1105,7 +867,7 @@ export function PostManager({
                           aria-label={`Dupliquer le dossier ${group.name} avec tous ses posts`}
                           title="Créer une copie du dossier et de tous ses posts"
                         >
-                          <span className="material-action-icon material-action-copy" aria-hidden="true" />
+                          <Icon name="content_copy" />
                         </button>
                         <button
                           className="creation-folder-edit-button"
@@ -1115,7 +877,7 @@ export function PostManager({
                           aria-label={`Renommer le dossier ${group.name}`}
                           title="Renommer le dossier"
                         >
-                          <span className="material-action-icon material-action-edit" aria-hidden="true" />
+                          <Icon name="edit" />
                         </button>
                         <button
                           className="creation-folder-delete-button"
@@ -1125,7 +887,7 @@ export function PostManager({
                           aria-label={`Supprimer le dossier ${group.name}`}
                           title="Supprimer le dossier"
                         >
-                          <span className="material-action-icon material-action-delete" aria-hidden="true" />
+                          <Icon name="delete" />
                         </button>
                       </>
                     )}
@@ -1136,13 +898,10 @@ export function PostManager({
                       onClick={() => toggleFolder(dropKey)}
                     >
                       <small>{group.posts.length} post{group.posts.length === 1 ? "" : "s"}</small>
-                      <span
-                        className={`creation-folder-chevron ${isCollapsed ? "collapsed" : ""}`}
-                        aria-hidden="true"
-                      />
+                      <Icon name="expand_more" className={`studio-folder-chevron ${isCollapsed ? "collapsed" : ""}`} />
                     </button>
                   </div>
-                </header>
+                </SectionHeading>
 
                 {draggedPageId && (
                   <div className="post-transfer-zone">Déposer ici pour créer un post simple dans {group.name}</div>
@@ -1171,16 +930,16 @@ export function PostManager({
                 <p>Nouveau post</p>
                 <h3 id="post-type-title">Quel type de post veux-tu créer ?</h3>
               </div>
-              <button type="button" onClick={() => setPostTypeFolderId(null)} aria-label="Fermer">×</button>
+              <button type="button" onClick={() => setPostTypeFolderId(null)} aria-label="Fermer"><Icon name="close" /></button>
             </header>
             <div className="post-type-options">
               <button type="button" disabled={creatingPost} onClick={() => void createPost("single")}>
-                <span className="post-type-single-icon" aria-hidden="true" />
+                <Icon name="image" />
                 <strong>Image unique</strong>
                 <small>Un visuel, une page à éditer.</small>
               </button>
               <button type="button" disabled={creatingPost} onClick={() => void createPost("gallery")}>
-                <span className="post-type-gallery-icon" aria-hidden="true"><i /><i /></span>
+                <Icon name="collections" />
                 <strong>Galerie</strong>
                 <small>Plusieurs pages à organiser.</small>
               </button>

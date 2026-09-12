@@ -1,4 +1,6 @@
 "use client";
+import { SectionHeading } from "./SectionHeading";
+import { Icon } from "./components";
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -137,8 +139,7 @@ export function GalleryImagePicker({
                   aria-label="Fermer le sélecteur"
                   title="Fermer"
                   onClick={() => setIsOpen(false)}
-                >
-                  ×
+                ><Icon name="close" />
                 </button>
               </div>
             </header>
@@ -155,7 +156,7 @@ export function GalleryImagePicker({
                         contentRef.current?.scrollTo({ top: 0 });
                       }}
                     >
-                      <span aria-hidden="true">{folder.id ? "📁" : "⌂"}</span>
+                      <Icon name={folder.id ? "folder" : "home"} />
                       <span>{folder.name}</span>
                       <small>{assets.filter((asset) => (asset.folderId ?? "") === folder.id).length}</small>
                     </button>
@@ -163,7 +164,7 @@ export function GalleryImagePicker({
                 </div>
               </nav>
               {folderError && <p className="gallery-error" role="alert">{folderError}</p>}
-              <h3 className="gallery-selector-folder-heading">{currentFolderName} <small>· {visibleAssets.length} image{visibleAssets.length > 1 ? "s" : ""}</small></h3>
+              <SectionHeading className="gallery-selector-folder-heading"><h3>{currentFolderName}</h3><small>{visibleAssets.length} image{visibleAssets.length > 1 ? "s" : ""}</small></SectionHeading>
               {loading || foldersLoading ? (
                 <p className="gallery-selector-message">Chargement de la galerie…</p>
               ) : assets.length === 0 ? (
@@ -275,7 +276,7 @@ export function GalleryImagePicker({
                 onRemove();
               }}
             >
-              <span className="trash-icon" aria-hidden="true" />
+              <Icon name="delete" />
             </button>
           ) : (
             <button

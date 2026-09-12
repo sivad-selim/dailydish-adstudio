@@ -1,4 +1,5 @@
 "use client";
+import { PageHeader, Icon } from "./components";
 
 import { useEffect, useRef, useState } from "react";
 import type { StudioPost } from "../firebase/posts";
@@ -7,10 +8,10 @@ import type { CreationFolder } from "../firebase/creationFolders";
 import type { Campaign } from "../firebase/campaigns";
 import type { GalleryAsset } from "../firebase/gallery";
 import { subscribeToPublicationPlan, updatePublicationPlan, type PlannedPublication } from "../firebase/publicationPlan";
-import { CreationCanvasPreview } from "./PostManager";
+import { PostPreview } from "./components/PostPreview";
 import { SectionHeading } from "./SectionHeading";
 import { Dropdown } from "./Dropdown";
-import { InstagramPublicationStatus, useInstagramHistory } from "./InstagramPublicationStatus";
+import { useInstagramHistory } from "./InstagramPublicationStatus";
 import { InstagramPublicationEditor } from "./InstagramPublicationEditor";
 import { orderFolderPosts } from "./postOrder";
 import { localDateKey, monthDays, movePublication, placeUnscheduled } from "./calendarModel";
@@ -59,15 +60,9 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
   const postName = (post?: StudioPost) => post ? pagesFor(post)[0]?.name || "Post sans titre" : "Post supprimé";
   const visibleEntries = entries.filter((entry) => filter === "all" || (filter === "published" ? Boolean(entry.publishedAt) : !entry.publishedAt));
   const edited = entries.find((entry) => entry.id === editingId);
-  function preview(page: Creation) {
-    const translation = campaigns.find((campaign) => campaign.id === page.campaignId)?.translations.fr;
-    return <div className={`creation-preview planner-preview format-${page.format}`} key={page.id}><CreationCanvasPreview creation={page} campaignTitle={translation?.title ?? ""} campaignDescription={translation?.description ?? ""} galleryAssets={galleryAssets} /></div>;
-  }
   function postVisual(post: StudioPost, entryId?: string) {
-    const cover = pagesFor(post)[0];
-
-
-    return <><div className="planner-picker-cover">{cover && preview(cover)}{post.type === "gallery" && <span className="post-gallery-badge" aria-hidden="true"><i /><i /></span>}</div><InstagramPublicationStatus items={instagramHistory.items.filter((item) => item.postId === post.id && (!entryId || item.entryId === entryId))} status={instagramHistory.status} /></>;
+    return <PostPreview creation={pagesFor(post)[0]} campaigns={campaigns} galleryAssets={galleryAssets} gallery={post.type === "gallery"}
+      publications={instagramHistory.items.filter((item) => item.postId === post.id && (!entryId || item.entryId === entryId))} status={instagramHistory.status} />;
   }
   function openPicker(date: string) { setTargetDate(date); setSearch(""); setPickerFilter("all"); picker.current?.showModal(); }
   function card(entry: PlannedPublication, index?: number) {
@@ -81,17 +76,17 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
       <button type="button" className="planner-card-open planner-picker-post" aria-label={`Modifier la planification de ${postName(post)}`} onClick={() => { setEditingId(entry.id); editor.current?.showModal(); }}>
         {post ? postVisual(post, entry.id) : <span>Post supprimé</span>}
       </button>
-      {view === "order" && <div className="planner-order-actions"><button disabled={unavailable || index === 0} onClick={() => { const before = visibleEntries[(index ?? 0) - 1]; if (before) void save((items) => movePublication(items, entry.id, before.id)); }} aria-label="Monter la publication">↑</button><button disabled={unavailable || index === visibleEntries.length - 1} onClick={() => { const after = visibleEntries[(index ?? 0) + 1]; if (after) void save((items) => movePublication(items, after.id, entry.id)); }} aria-label="Descendre la publication">↓</button></div>}
+      {view === "order" && <div className="planner-order-actions"><button disabled={unavailable || index === 0} onClick={() => { const before = visibleEntries[(index ?? 0) - 1]; if (before) void save((items) => movePublication(items, entry.id, before.id)); }} aria-label="Monter la publication"><Icon name="arrow_upward" /></button><button disabled={unavailable || index === visibleEntries.length - 1} onClick={() => { const after = visibleEntries[(index ?? 0) + 1]; if (after) void save((items) => movePublication(items, after.id, entry.id)); }} aria-label="Descendre la publication"><Icon name="arrow_downward" /></button></div>}
     </article>;
   }
   const groups = [...folders, { id: "", name: "Sans dossier" }];
   return <section className="publication-calendar">
-    <header className="planner-heading"><div><h2>Calendrier</h2><p>Prépare l’ordre de tes publications et choisis leurs dates.</p></div></header>
+    <PageHeader title="Calendrier" description="Prépare l’ordre de tes publications et choisis leurs dates." />
     <div className="planner-toolbar"><div className="planner-switch"><button aria-pressed={view === "month"} onClick={() => setView("month")}>Calendrier</button><button aria-pressed={view === "order"} onClick={() => setView("order")}>Ordre des publications</button></div><Dropdown aria-label="Filtrer les publications" value={filter} onChange={(event) => setFilter(event.target.value)}><option value="all">Toutes</option><option value="pending">À publier</option><option value="published">Publiées</option></Dropdown><span role="status">{syncing || loading ? "Chargement…" : busy ? "Enregistrement…" : `${entries.length} publication${entries.length > 1 ? "s" : ""}`}</span></div>
     {error && <p className="planner-error" role="alert">{error}</p>}
     {view === "month" ? <>
       <section className="planner-unscheduled" aria-label="À planifier">
-        <h3>À planifier</h3>
+        <SectionHeading><h3>À planifier</h3><small>{visibleEntries.filter((entry) => !entry.date).length}</small></SectionHeading>
         <p className="planner-help">Ajoute tes posts, organise-les ici, puis glisse-les vers une journée du calendrier.</p>
         <div className="planner-grid-scroll planner-unscheduled-scroll">
           <div className="planner-unscheduled-grid" onDragOver={(event) => { if (draggedId && !unavailable) event.preventDefault(); }} onDrop={(event) => {
@@ -105,19 +100,19 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
               event.preventDefault(); event.stopPropagation();
               void save((items) => placeUnscheduled(items, draggedId, items.find((item) => !item.date && item.id !== draggedId)?.id));
               setDraggedId("");
-            }}><span aria-hidden="true">＋</span>Ajouter un post</button>
+            }}><Icon name="add" />Ajouter un post</button>
             {visibleEntries.filter((entry) => !entry.date).map((entry) => card(entry))}
             <div className="planner-empty-slot" aria-label="Emplacement libre pour déposer un post" onDragOver={(event) => { if (draggedId && !unavailable) { event.preventDefault(); event.dataTransfer.dropEffect = "move"; } }}><span>Déposer un post ici</span></div>
           </div>
         </div>
       </section>
-      <div className="planner-month-nav"><button aria-label="Mois précédent" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>←</button><h3>{month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</h3><button aria-label="Mois suivant" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>→</button><button onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Aujourd’hui</button></div>
+      <div className="planner-month-nav"><button aria-label="Mois précédent" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><Icon name="chevron_left" /></button><h3>{month.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}</h3><button aria-label="Mois suivant" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><Icon name="chevron_right" /></button><button onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Aujourd’hui</button></div>
       <div className="planner-month-layout"><div className="planner-grid-scroll"><div className="planner-grid">
         {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((day) => <div className="planner-weekday" key={day}>{day}</div>)}
-        {monthDays(month).map((day) => { const key = localDateKey(day); return <div key={key} className={`planner-day ${day.getMonth() !== month.getMonth() ? "outside" : ""} ${key === localDateKey(new Date()) ? "today" : ""}`} onClick={(event) => { if (event.target === event.currentTarget && !unavailable) openPicker(key); }} onDragOver={(event) => { if (draggedId && !unavailable) event.preventDefault(); }} onDrop={(event) => { if (!draggedId || unavailable) return; event.preventDefault(); event.stopPropagation(); void patch(draggedId, { date: key }); setDraggedId(""); }}><button className="planner-day-add" disabled={unavailable} aria-label={`Ajouter un post le ${displayDate(key)}`} onClick={() => openPicker(key)}><span>{day.getDate()}</span><span>＋</span></button>{visibleEntries.filter((entry) => entry.date === key).map((entry) => card(entry))}</div>; })}
+        {monthDays(month).map((day) => { const key = localDateKey(day); return <div key={key} className={`planner-day ${day.getMonth() !== month.getMonth() ? "outside" : ""} ${key === localDateKey(new Date()) ? "today" : ""}`} onClick={(event) => { if (event.target === event.currentTarget && !unavailable) openPicker(key); }} onDragOver={(event) => { if (draggedId && !unavailable) event.preventDefault(); }} onDrop={(event) => { if (!draggedId || unavailable) return; event.preventDefault(); event.stopPropagation(); void patch(draggedId, { date: key }); setDraggedId(""); }}><button className="planner-day-add" disabled={unavailable} aria-label={`Ajouter un post le ${displayDate(key)}`} onClick={() => openPicker(key)}><span>{day.getDate()}</span><Icon name="add" /></button>{visibleEntries.filter((entry) => entry.date === key).map((entry) => card(entry))}</div>; })}
       </div></div></div></>
       : <><p className="planner-help">Glisse les publications pour organiser leur ordre. Les dates restent indépendantes.</p><div className="planner-order-list">{visibleEntries.map((entry, index) => card(entry, index))}</div>{!visibleEntries.length && <p className="planner-empty">Aucune publication ici. Ajoute un post pour commencer.</p>}</>}
-    <dialog ref={picker} className="planner-dialog"><header><div><h3>Ajouter un post</h3><p>{targetDate ? `Pour le ${displayDate(targetDate)}` : "Dans les posts à planifier"}</p></div><button aria-label="Fermer le sélecteur" onClick={() => picker.current?.close()}>✕</button></header>
+    <dialog ref={picker} className="planner-dialog"><header><div><h3>Ajouter un post</h3><p>{targetDate ? `Pour le ${displayDate(targetDate)}` : "Dans les posts à planifier"}</p></div><button aria-label="Fermer le sélecteur" onClick={() => picker.current?.close()}><Icon name="close" /></button></header>
       <div className="planner-toolbar"><input type="search" placeholder="Rechercher un post ou un dossier" aria-label="Rechercher un post ou un dossier" value={search} onChange={(event) => setSearch(event.target.value)} /><Dropdown aria-label="Filtrer les posts disponibles" value={pickerFilter} onChange={(event) => setPickerFilter(event.target.value)}><option value="all">Tous les posts</option><option value="unpublished">Jamais publiés</option><option value="published">Déjà publiés</option></Dropdown></div>
       {error && <p role="alert" className="planner-error">{error}</p>}
       {!posts.length && <p>Aucun post disponible. Crée un post dans l’onglet Posts.</p>}
@@ -127,7 +122,7 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
           return `${folder.name} ${postName(post)}`.toLocaleLowerCase().includes(search.toLocaleLowerCase()) && (pickerFilter === "all" || (pickerFilter === "published" ? published : !published));
         });
         if (!candidates.length) return null;
-        return <details className="planner-folder" key={folder.id} open><SectionHeading as="summary"><h2>{folder.name}</h2><small>{candidates.length}</small></SectionHeading><div className="planner-picker-grid">{candidates.map((post) => {
+        return <details className="planner-folder" key={folder.id} open><SectionHeading as="summary"><Icon name="expand_more" className="studio-folder-chevron" /><h2>{folder.name}</h2><small>{candidates.length}</small></SectionHeading><div className="planner-picker-grid">{candidates.map((post) => {
           const cover = pagesFor(post)[0];
           return <button aria-label={`Sélectionner ${post.type === "gallery" ? "la galerie" : "le post"} ${postName(post)}`} disabled={unavailable || !cover} className="planner-picker-post" key={post.id} onClick={() => { const entry = { id: crypto.randomUUID(), postId: post.id, date: targetDate, publishedAt: "" }; void save((items) => [...items, entry]).then((ok) => { if (ok) picker.current?.close(); }); }}>{postVisual(post)}</button>;
         })}</div></details>;

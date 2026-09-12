@@ -1,3 +1,4 @@
+import { PageHeader, Icon, SectionHeading } from "./components";
 import {
   ChangeEvent,
   DragEvent as ReactDragEvent,
@@ -164,16 +165,9 @@ export function GalleryManager({
 
   return (
     <section className="gallery-page">
-      <header className="gallery-page-header">
-        <div>
-          <p>Bibliothèque visuelle</p>
-          <h2>Galerie</h2>
-          <span>
-            Importez vos images et retrouvez-les sur tous vos appareils.
-          </span>
-        </div>
+      <PageHeader title="Galerie" description="Importe et organise les images de tes publications.">
         <strong>{assets.length} image{assets.length > 1 ? "s" : ""}</strong>
-      </header>
+      </PageHeader>
 
       <div className="gallery-content">
         <div className="gallery-folder-toolbar">
@@ -197,13 +191,13 @@ export function GalleryManager({
                 }}
                 onDrop={(event) => folderDrop(event, folder.id)}
               >
-                <span aria-hidden="true">{folder.id ? "📁" : "⌂"}</span>
+                <Icon name={folder.id ? "folder" : "home"} />
                 <span>{folder.name}</span>
                 <small>{assets.filter((asset) => (asset.folderId ?? "") === folder.id).length}</small>
               </button>
             ))}
           </nav>
-          <button className="gallery-new-folder" type="button" disabled={foldersLoading} onClick={() => setShowFolderForm(true)}>+ Nouveau dossier</button>
+          <button className="gallery-new-folder" type="button" disabled={foldersLoading} onClick={() => setShowFolderForm(true)}><Icon name="folder" />Nouveau dossier</button>
         </div>
         {showFolderForm && (
           <form className="gallery-folder-form" onSubmit={(event) => { event.preventDefault(); void addFolder(); }}>
@@ -213,10 +207,8 @@ export function GalleryManager({
             <button type="button" disabled={creatingFolder} onClick={() => { setShowFolderForm(false); setNewFolderName(""); }}>Annuler</button>
           </form>
         )}
-        <div className="gallery-folder-heading">
-          <h3>{currentFolderName} <small>· {visibleAssets.length} image{visibleAssets.length > 1 ? "s" : ""}</small></h3>
-          <p>Glissez une image sur un dossier pour la ranger.</p>
-        </div>
+        <SectionHeading className="gallery-folder-heading"><h3>{currentFolderName}</h3><small>{visibleAssets.length} image{visibleAssets.length > 1 ? "s" : ""}</small></SectionHeading>
+        <p className="studio-description">Glisse une image sur un dossier pour la ranger.</p>
         <input
           ref={fileInputRef}
           className="visually-hidden"
@@ -235,7 +227,7 @@ export function GalleryManager({
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
         >
-          <span className="gallery-upload-symbol" aria-hidden="true">+</span>
+          <span className="gallery-upload-symbol"><Icon name="upload" /></span>
           <strong>
             {uploading
               ? "Importation en cours…"
