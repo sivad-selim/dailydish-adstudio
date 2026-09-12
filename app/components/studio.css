@@ -90,7 +90,7 @@
 .studio-post-cover { position: relative; width: 100%; border-radius: 8px; overflow: hidden; }
 .studio-post-cover .studio-post-image { width: 100%; padding: 0; border: 0; border-radius: 8px; background: #f1f0ec; display: flex; aspect-ratio: 4 / 5; }
 .studio-post-cover .studio-gallery-badge {
-  position: absolute; top: 8px; right: 8px; bottom: auto; z-index: 20;
+  position: absolute; top: auto; right: 8px; bottom: 8px; z-index: 20;
   display: grid; place-items: center; width: 32px; height: 32px; min-height: 0;
   padding: 6px; border: 1px solid #ffffff70; border-radius: 8px;
   background: var(--studio-accent); color: white; box-shadow: 0 2px 8px #30283826;
