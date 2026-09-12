@@ -1,0 +1,18 @@
+[
+  {
+    "origin": [
+      "https://dailydish-ad-studio.web.app",
+      "https://dailydish-ad-studio.firebaseapp.com",
+      "http://localhost:3000",
+      "http://localhost:3001"
+    ],
+    "method": ["GET", "HEAD"],
+    "responseHeader": [
+      "Cache-Control",
+      "Content-Length",
+      "Content-Type",
+      "ETag"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

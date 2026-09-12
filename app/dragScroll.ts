@@ -1,0 +1,2 @@
+export const DRAG_AUTO_SCROLL_EDGE = 140;
+export const DRAG_AUTO_SCROLL_MAX_SPEED = 24;

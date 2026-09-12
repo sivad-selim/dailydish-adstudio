@@ -1,0 +1,18 @@
+{
+  "projects": {},
+  "targets": {
+    "daily-dish-b10b4": {
+      "hosting": {
+        "ad-studio": [
+          "dailydish-ad-studio"
+        ]
+      },
+      "storage": {
+        "ad-studio": [
+          "daily-dish-b10b4-ad-studio"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

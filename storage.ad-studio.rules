@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isDailyDishOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'mydailydishapp@gmail.com';
+    }
+
+    function isValidPng() {
+      return request.resource.size <= 10 * 1024 * 1024
+        && request.resource.contentType == 'image/png';
+    }
+
+    function isValidGalleryImage() {
+      return request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    match /gallery/{fileName} {
+      allow read, delete: if isDailyDishOwner();
+      allow create, update: if isDailyDishOwner() && isValidGalleryImage();
+    }
+
+    match /mascots/{fileName} {
+      allow read, delete: if isDailyDishOwner();
+      allow create, update: if isDailyDishOwner() && isValidPng();
+    }
+
+    match /creations/{creationId}/{fileName} {
+      allow read, delete: if isDailyDishOwner();
+      allow create, update: if isDailyDishOwner()
+        && request.resource.size <= 15 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    match /instagram-publishing/{uid}/{entryId}/{account}/{fileName} {
+      allow read: if isDailyDishOwner();
+      allow create: if isDailyDishOwner() && request.auth.uid == uid
+        && account in ['en', 'fr', 'br']
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+      allow update, delete: if false;
+    }
+
+    match /{file=**} {
+      allow read, write: if false;
+    }
+  }
+}

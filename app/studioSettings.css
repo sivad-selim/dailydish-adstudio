@@ -1,0 +1,10 @@
+.studio-header .studio-navigation-group { position: absolute; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; }
+.studio-header .studio-navigation-group .studio-navigation { position: static; transform: none; margin: 0; }
+.studio-settings-button { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; padding: 8px; border: 1px solid transparent; border-radius: 10px; color: var(--muted); background: transparent; cursor: pointer; }
+.studio-settings-button:hover, .studio-settings-button.selected { color: var(--purple); background: #f3edf9; border-color: #e4d9ed; }
+.studio-settings-button svg { width: 20px; height: 20px; }
+.studio-settings { max-width: 1100px; margin: 0 auto; }
+@media (max-width: 800px) {
+  .studio-header .studio-navigation-group { position: static; transform: none; order: 3; margin: auto; max-width: 100%; gap: 8px; }
+  .studio-header .studio-navigation-group .studio-navigation { overflow-x: auto; min-width: 0; }
+}

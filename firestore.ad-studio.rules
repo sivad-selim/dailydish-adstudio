@@ -1,0 +1,48 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isDailyDishOwner() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email == 'mydailydishapp@gmail.com';
+    }
+
+    match /campaigns/{campaignId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /creations/{creationId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /creation-folders/{folderId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /gallery-folders/{folderId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /campaign-folders/{folderId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /publication-plans/{planId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /posts/{postId} {
+      allow read, create, update, delete: if isDailyDishOwner();
+    }
+
+    match /instagram-publications/{publicationId} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
