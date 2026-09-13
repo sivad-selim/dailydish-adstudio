@@ -1,10 +1,13 @@
 "use client";
 import { Icon } from "./components";
+import { FormatChangeDialog } from "./components/FormatChangeDialog";
+import { CampaignPicker } from "./CampaignPicker";
+import { InstagramPhonePreview, PREVIEW_PHONES, type PreviewPhone } from "./components/InstagramPhonePreview";
 
 import { exportCanvasPng } from "./exportCanvasPng";
 import { duplicatePostFolder } from "../firebase/duplicatePostFolder";
 import { FORMAT_CONFIG } from "./adFormats";
-import { changeImageFormat, type FormatChangeAnchor } from "./imagePositioning";
+import { changeImageFormat } from "./imagePositioning";
 import {
   type CSSProperties,
   PointerEvent as ReactPointerEvent,
@@ -17,7 +20,6 @@ import {
   CAMPAIGN_LANGUAGES,
   createCampaign,
   deleteCampaign,
-  getCampaignTitle,
   moveCampaign,
   saveCampaign,
   subscribeToCampaigns,
@@ -273,9 +275,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     useState<CampaignLanguage>("fr");
   const [title, setTitle] = useState(DEFAULT_TITLE);
   const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [showInstagramGuides, setShowInstagramGuides] = useState(true);
+  const [previewPhone, setPreviewPhone] = useState<PreviewPhone>("pixel-10-pro-xl");
+  const [showInstagramAdButton, setShowInstagramAdButton] = useState(true);
   const [format, setFormat] = useState<AdFormat>("portrait");
   const [pendingFormat, setPendingFormat] = useState<AdFormat | null>(null);
-  const [conversionAnchor, setConversionAnchor] = useState<FormatChangeAnchor>("center");
   useEffect(() => { setPendingFormat(null); }, [selectedCreationId]);
   const [properties, setProperties] = useState<CreationProperties>(
     createDefaultCreationProperties,
@@ -1368,22 +1372,25 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     if (!activeCreation) return null;
 
     return (
-      <CreationCanvasPreview
+      <InstagramPhonePreview enabled={showInstagramGuides} phone={previewPhone}
+        previewWidth={Math.round((PREVIEW_WIDTH_AT_100 * previewZoom) / 100)}
+        imageWidth={FORMAT_CONFIG[activeCreation.format].width} imageHeight={FORMAT_CONFIG[activeCreation.format].height}
+        showAdButton={showInstagramAdButton}>
+      {(width) => <CreationCanvasPreview
         creation={activeCreation}
         campaignTitle={title}
         campaignDescription={description.trim()}
         language={campaignLanguage}
         galleryAssets={imageGalleryAssets}
         interactive
-        previewWidth={Math.round(
-          (PREVIEW_WIDTH_AT_100 * previewZoom) / 100,
-        )}
+        previewWidth={width}
         rootRef={canvasRef}
         onImagePointerDown={startDraggingImage}
         onImagePointerMove={dragImage}
         onImagePointerUp={stopDraggingImage}
         onImagePointerCancel={stopDraggingImage}
-      />
+      />}
+      </InstagramPhonePreview>
     );
   };
 
@@ -1480,17 +1487,19 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
         {isActive ? (
           renderActiveCanvas()
         ) : (
-          <div
-            className={`gallery-editor-page-preview creation-preview format-${page.format}`}
-          >
-            <CreationCanvasPreview
+          <InstagramPhonePreview enabled={showInstagramGuides} phone={previewPhone}
+            previewWidth={Math.round((PREVIEW_WIDTH_AT_100 * previewZoom) / 100)}
+            imageWidth={FORMAT_CONFIG[page.format].width} imageHeight={FORMAT_CONFIG[page.format].height}
+            showAdButton={showInstagramAdButton}>
+            {(width) => <CreationCanvasPreview
               creation={page}
               campaignTitle={pageTranslation?.title ?? ""}
               campaignDescription={pageTranslation?.description ?? ""}
               language={campaignLanguage}
               galleryAssets={backgroundGalleryAssets}
-            />
-          </div>
+              previewWidth={width}
+            />}
+          </InstagramPhonePreview>
         )}
       </div>
     );
@@ -1681,24 +1690,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
 
             {campaigns.length > 0 ? (
               <>
-                <label className="field-label" htmlFor="studio-campaign">
-                  Campagne
-                </label>
-                <Dropdown
-                  id="studio-campaign"
-                  wrapperClassName="campaign-select"
+                <CampaignPicker
+                  campaigns={campaigns}
                   value={selectedCampaignId}
-                  onChange={(event) =>
-                    setSelectedCampaignId(event.target.value)
-                  }
-                >
-                  <option value="">Choisir une campagne</option>
-                  {campaigns.map((campaign) => (
-                    <option value={campaign.id} key={campaign.id}>
-                      {getCampaignTitle(campaign)}
-                    </option>
-                  ))}
-                </Dropdown>
+                  onChange={setSelectedCampaignId}
+                />
 
                 {selectedCampaign && (
                   <div className="studio-language-picker" aria-label="Langue">
@@ -1753,7 +1749,6 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                       aria-pressed={selected}
                       onClick={() => {
                         setPendingFormat(formatOption === format ? null : formatOption);
-                        setConversionAnchor("center");
                       }}
                     >
                       <span
@@ -1769,28 +1764,31 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 },
               )}
             </div>
-            {pendingFormat && <div className="format-anchor-control" aria-live="polite">
-              <strong>{FORMAT_CONFIG[format].label} → {FORMAT_CONFIG[pendingFormat].label}</strong>
-              <span>Conserver le placement des images :</span>
-              <div className="format-anchor-options" role="group" aria-label="Ancrage des images lors du changement de format">
-                {([["top", "Haut"], ["center", "Centre"], ["bottom", "Bas"]] as [FormatChangeAnchor, string][]).map(([anchor, label]) => (
-                  <button
-                    key={anchor}
-                    type="button"
-                    aria-pressed={conversionAnchor === anchor}
-                    onClick={() => setConversionAnchor(anchor)}
-                  >{label}</button>
-                ))}
-              </div>
-              <div className="format-anchor-options">
-                <button type="button" onClick={() => setPendingFormat(null)}>Annuler</button>
-                <button type="button" className="format-change-confirm" onClick={() => {
-                  setProperties((current) => changeImageFormat(current, format, pendingFormat, conversionAnchor));
-                  setFormat(pendingFormat);
-                  setPendingFormat(null);
-                }}>Changer</button>
-              </div>
-            </div>}
+            {pendingFormat && <FormatChangeDialog
+              from={FORMAT_CONFIG[format].label}
+              to={FORMAT_CONFIG[pendingFormat].label}
+              onCancel={() => setPendingFormat(null)}
+              onChoose={(anchor) => {
+                setProperties((current) => changeImageFormat(current, format, pendingFormat, anchor));
+                setFormat(pendingFormat);
+                setPendingFormat(null);
+              }}
+            />}
+          </section>
+
+          <section className="instagram-guides-controls">
+            <label className="field-label" htmlFor="instagram-preview-phone">Téléphone</label>
+            <Dropdown id="instagram-preview-phone" value={previewPhone} onChange={(event) => setPreviewPhone(event.target.value as PreviewPhone)}>
+              {Object.entries(PREVIEW_PHONES).map(([id, device]) => <option key={id} value={id}>{device.label}</option>)}
+            </Dropdown>
+            <label className="toggle-row">
+              <strong>Afficher les repères</strong>
+              <input type="checkbox" checked={showInstagramGuides} onChange={(event) => setShowInstagramGuides(event.target.checked)} />
+            </label>
+              <label className="toggle-row">
+                <strong>Afficher le bouton</strong>
+                <input type="checkbox" checked={showInstagramAdButton} onChange={(event) => setShowInstagramAdButton(event.target.checked)} />
+              </label>
           </section>
 
           <section>

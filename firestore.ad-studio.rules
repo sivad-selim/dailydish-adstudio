@@ -41,6 +41,23 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /publication-settings/{id} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+    match /publication-schedules/{id} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+    match /publication-reports/{id} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+    match /publication-schedule-attempts/{id} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

@@ -1197,6 +1197,8 @@ button { color: inherit; }
 .dropdown:has(.dropdown-select:disabled) { opacity: 0.55; }
 .dropdown-select:disabled { cursor: not-allowed; }
 .campaign-select { margin-bottom: 12px; }
+.campaign-picker-filters { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 12px; }
+.campaign-picker-message { margin: 0 0 12px; color: var(--muted); font-size: 12px; line-height: 1.4; }
 .studio-language-picker {
   background: #f4f5f1;
   border-radius: 12px;
@@ -3290,14 +3292,7 @@ textarea:focus {
 .gallery-editor-page:not(.active) .gallery-editor-page-label:hover {
   background: #d8d5db;
 }
-.format-anchor-control { display: grid; gap: 10px; margin-top: 16px; }
-.format-anchor-control > strong { font-size: 13px; }
-.format-anchor-control > small { color: #77717e; line-height: 1.5; }
-.format-anchor-options { display: flex; gap: 8px; }
-.format-anchor-options button { flex: 1; padding: 9px; border: 1px solid #ddd3e8; border-radius: 9px; background: white; color: var(--purple); cursor: pointer; font-weight: 700; }
-.format-anchor-options button[aria-pressed="true"],
-.format-anchor-options button.format-change-confirm { background: var(--purple); border-color: var(--purple); color: white; }
-.format-anchor-options button:focus-visible { outline: 3px solid #d9c9eb; outline-offset: 2px; }
+
 .gallery-editor-page-actions { display: flex; gap: 8px; }
 .gallery-editor-page-duplicate,
 .gallery-editor-page-delete {

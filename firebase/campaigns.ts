@@ -26,6 +26,7 @@ export type CampaignTranslations = Record<
 export type Campaign = {
   id: string;
   folderId?: string;
+  updatedAt?: number;
   translations: CampaignTranslations;
 };
 
@@ -100,6 +101,7 @@ export const subscribeToCampaigns = (
           const data = snapshotDocument.data();
           return {
             id: snapshotDocument.id,
+            updatedAt: data.updatedAt?.toMillis?.() ?? 0,
             folderId: typeof data.folderId === "string" ? data.folderId : "",
             translations: {
               fr: readTranslation(data.translations, "fr"),
