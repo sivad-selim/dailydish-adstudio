@@ -62,6 +62,48 @@ test("uploads remember the destination folder and default to the root", async ()
   assert.equal(uploaded.folderId, "recipes");
 });
 
+test("posts arriving after the gallery listing resolve their new backgrounds without reloading known images", async () => {
+  const reads = [];
+  const gallery = loadGallery({
+    getMetadata: async (item) => {
+      reads.push(item.fullPath);
+      return { size: 10, timeCreated: "2026-09-13", customMetadata: { originalName: "Carotte.png" } };
+    },
+    getDownloadURL: async (item) => `https://example.test/${item.fullPath}`,
+  });
+  const known = [{id: "gallery/existing.png"}];
+  const result = await gallery.loadMissingGalleryAssets([
+    "gallery/existing.png", "gallery/carrot.png", "gallery/carrot.png", "",
+  ], known);
+  assert.deepEqual(reads, ["gallery/carrot.png"]);
+  assert.equal(result.assets.length, 1);
+  assert.equal(result.assets[0].id, "gallery/carrot.png");
+  assert.equal(result.assets[0].url, "https://example.test/gallery/carrot.png");
+  assert.equal(result.failedIds.length, 0);
+  await gallery.loadMissingGalleryAssets(["gallery/carrot.png"], [...known, ...result.assets]);
+  assert.equal(reads.length, 1);
+});
+
+test("an unavailable image does not hide other imported images and can be retried", async () => {
+  let unavailable = true;
+  const gallery = loadGallery({
+    getMetadata: async (item) => {
+      if (item.name === "later.png" && unavailable) throw new Error("not found");
+      return {size: 10, timeCreated: "2026-09-13"};
+    },
+    getDownloadURL: async (item) => `https://example.test/${item.fullPath}`,
+  });
+  const ids = ["gallery/ready.png", "gallery/later.png"];
+  const first = await gallery.loadMissingGalleryAssets(ids, []);
+  assert.equal(first.assets[0].id, "gallery/ready.png");
+  assert.deepEqual(Array.from(first.failedIds), ["gallery/later.png"]);
+  unavailable = false;
+  const retry = await gallery.loadMissingGalleryAssets(ids, first.assets);
+  assert.equal(retry.assets.length, 1);
+  assert.equal(retry.assets[0].id, "gallery/later.png");
+  assert.equal(retry.failedIds.length, 0);
+});
+
 test("moving to a folder and back only updates metadata at the original path", async () => {
   const updates = [];
   const gallery = loadGallery({ updateMetadata: async (...args) => updates.push(args) });

@@ -74,28 +74,41 @@ const fileExtension = (file: File) => {
   return "png";
 };
 
+export async function getGalleryAsset(path: string): Promise<GalleryAsset> {
+  if (!path.startsWith(`${GALLERY_FOLDER}/`) && !path.startsWith(`${LEGACY_MASCOT_FOLDER}/`)) {
+    throw new Error("Chemin d’image invalide.");
+  }
+  const item = ref(galleryStorage, path);
+  const [metadata, url] = await Promise.all([getMetadata(item), getDownloadURL(item)]);
+  return {
+    id: item.fullPath,
+    path: item.fullPath,
+    name: metadata.customMetadata?.originalName ?? item.name,
+    url,
+    size: metadata.size,
+    createdAt: metadata.timeCreated,
+    folderId: metadata.customMetadata?.folderId ?? "",
+  };
+}
+
+/** Posts may arrive through Firestore after the initial Storage listing. */
+export async function loadMissingGalleryAssets(ids: string[], assets: GalleryAsset[]) {
+  const known = new Set(assets.map((asset) => asset.id));
+  const missing = [...new Set(ids)].filter((id) => id && !known.has(id));
+  const results = await Promise.allSettled(missing.map(getGalleryAsset));
+  return {
+    assets: results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
+    failedIds: missing.filter((_, index) => results[index].status === "rejected"),
+  };
+}
+
 export async function listGalleryAssets(): Promise<GalleryAsset[]> {
   const listings = await Promise.all([
     listAll(ref(galleryStorage, GALLERY_FOLDER)),
     listAll(ref(galleryStorage, LEGACY_MASCOT_FOLDER)),
   ]);
   const assets = await Promise.all(
-    listings.flatMap((listing) => listing.items).map(async (item) => {
-      const [metadata, url] = await Promise.all([
-        getMetadata(item),
-        getDownloadURL(item),
-      ]);
-
-      return {
-        id: item.fullPath,
-        path: item.fullPath,
-        name: metadata.customMetadata?.originalName ?? item.name,
-        url,
-        size: metadata.size,
-        createdAt: metadata.timeCreated,
-        folderId: metadata.customMetadata?.folderId ?? "",
-      } satisfies GalleryAsset;
-    }),
+    listings.flatMap((listing) => listing.items).map((item) => getGalleryAsset(item.fullPath)),
   );
 
   return assets.sort((left, right) =>

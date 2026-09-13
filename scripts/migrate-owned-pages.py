@@ -32,14 +32,7 @@ def ident(raw): return raw['name'].rsplit('/', 1)[-1]
 def path(collection, id): return api.ROOT + '/' + collection + '/' + id
 def uid(value): return uuid5(NAMESPACE_URL, 'adstudio/owned-pages/' + value).hex
 
-def pack(value):
-    if isinstance(value, str): return {'stringValue': value}
-    if isinstance(value, bool): return {'booleanValue': value}
-    if isinstance(value, int): return {'integerValue': str(value)}
-    if isinstance(value, float): return {'doubleValue': value}
-    if isinstance(value, list): return {'arrayValue': {'values': [pack(x) for x in value]} if value else {}}
-    if isinstance(value, dict): return {'mapValue': {'fields': {k: pack(v) for k, v in value.items()}} if value else {}}
-    raise ValueError('Unsupported value')
+pack = api.pack
 
 EMPTY = pack({lang: {'title': '', 'description': ''} for lang in ('en', 'fr', 'pt')})
 def page_text(message):

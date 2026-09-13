@@ -3021,6 +3021,7 @@ textarea:focus {
 .gallery-editor-add-page:disabled { cursor: wait; opacity: 0.62; }
 .single-editor-page { display: contents; }
 .ad-canvas {
+  isolation: isolate;
   --ad-description-size: 4.5cqw;
   --ad-title-long-size: 6.45cqw;
   --ad-title-size: 7.4cqw;
@@ -4154,6 +4155,30 @@ textarea:focus {
   user-select: none;
   width: 100%;
 }
+.canvas-store-buttons {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2cqw;
+  pointer-events: none;
+  z-index: 100;
+}
+.canvas-store-buttons .store-button-image {
+  flex: 0 0 auto;
+  width: var(--store-button-width);
+  height: auto;
+}
+.store-button-placeholder {
+  width: var(--store-button-width);
+  padding: 2cqw;
+  background: #fff;
+  color: #70657b;
+  font-size: 2cqw;
+  text-align: center;
+}
 .image-placeholder {
   align-items: center;
   display: flex;
@@ -4330,4 +4355,38 @@ textarea:focus {
   padding: 8px;
   font-size: 14px;
   font-weight: 700;
+}
+
+/* KMP OnboardingBubble: 16dp corners, solid shadow offset 8dp/10dp.
+   Scale the mobile geometry from a 360dp canvas to previews and PNG exports. */
+.ad-copy .onboarding-text-bubble {
+  background: #fff8e8;
+  border-radius: 4.444444cqw;
+  box-shadow: 2.222222cqw 2.777778cqw 0 #d2a55e;
+  box-sizing: border-box;
+  padding: 13.333333cqw 6.666667cqw 8.888889cqw;
+  width: 100%;
+}
+.ad-copy.with-assistant > .onboarding-text-bubble {
+  margin-top: 2.77cqw;
+}
+.ad-copy > .onboarding-text-bubble.bubble-target-title:has(+ p) {
+  margin-bottom: 5.177778cqw;
+}
+.ad-canvas .ad-copy.text-backdrop-bubble .onboarding-text-bubble h2 {
+  color: #7a6042;
+  margin: 0;
+  text-shadow: none;
+}
+.ad-canvas .ad-copy.text-backdrop-bubble .onboarding-text-bubble p {
+  color: #9b7b55;
+  text-shadow: none;
+}
+.ad-copy .onboarding-text-bubble h2 + p {
+  margin-top: 2.222222cqw;
+}
+
+/* A description-only bubble needs no extra space above its content. */
+.ad-copy .onboarding-text-bubble:not(:has(h2)) {
+  padding-top: 8.888889cqw;
 }

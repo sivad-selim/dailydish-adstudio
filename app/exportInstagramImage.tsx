@@ -16,7 +16,7 @@ export async function exportInstagramImage(postPage: PostPage, language: Message
     // Modal preparation can start in a React effect. Render the export outside
     // that commit so flushSync has actually populated the DOM before reading it.
     await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-    flushSync(() => root.render(<PageCanvasPreview postPage={postPage} messageTitle={title} messageDescription={description} galleryAssets={assets} language={language} previewWidth={827} showPlaceholder={false} />));
+    flushSync(() => root.render(<PageCanvasPreview postPage={postPage} messageTitle={title} messageDescription={description} galleryAssets={assets} language={language} previewWidth={827} />));
     const canvas = host.firstElementChild as HTMLDivElement;
     canvas.style.width = "827px";
     const png = await exportCanvasPng(canvas, postPage.format, assets);

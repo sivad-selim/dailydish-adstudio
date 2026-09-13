@@ -48,6 +48,7 @@ import {
 import {
   deleteGalleryAsset,
   listGalleryAssets,
+  loadMissingGalleryAssets,
   moveGalleryAsset,
   uploadGalleryFiles,
   type GalleryAsset,
@@ -70,6 +71,7 @@ import {
   type PageImage,
   type PageLayout,
   type TextBackdrop,
+  type TextBubbleTarget,
   type TextColorTone,
   type TextPosition,
 } from "../firebase/postPages";
@@ -87,6 +89,7 @@ import { GalleryManager } from "./GalleryManager";
 import { GalleryImagePicker } from "./GalleryImagePicker";
 import { ThemeableBackgroundArtwork } from "./ThemeableBackgroundArtwork";
 import { ThemeColorControls } from "./ThemeColorControls";
+import { StoreButtonsControls } from "./StoreButtonsControls";
 import {
   CAPTURED_MONOCHOLOR_THEMES,
   CAPTURED_PASTEL_THEMES,
@@ -334,6 +337,18 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   const description = selectedTranslations?.[messageLanguage].description ?? "";
   const imageGalleryAssets = galleryAssets;
   const backgroundGalleryAssets = galleryAssets;
+  const missingGalleryAssetIds = useMemo(() => {
+    const known = new Set(galleryAssets.map((asset) => asset.id));
+    const referenced = postPages.flatMap((page) => [
+      page.backgroundAssetId,
+      ...(page.properties.storeButtons.enabled ? [page.properties.storeButtons.iosAssetId, page.properties.storeButtons.androidAssetId] : []),
+      ...page.properties.images.flatMap((image) => [
+        image.assetId,
+        ...Object.values(image.localizedAssetIds ?? {}),
+      ]),
+    ]);
+    return JSON.stringify([...new Set(referenced.filter((id) => id && !known.has(id)))].sort());
+  }, [postPages, galleryAssets]);
   const selectedBackgroundAsset =
     backgroundGalleryAssets.find((asset) => asset.id === backgroundAssetId) ??
     null;
@@ -538,6 +553,35 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     };
   }, [accountEmail]);
 
+
+  useEffect(() => {
+    if (!accountEmail || galleryLoading || missingGalleryAssetIds === "[]") return;
+    let cancelled = false;
+    let loading = false;
+    const refresh = async () => {
+      if (loading) return;
+      loading = true;
+      const result = await loadMissingGalleryAssets(JSON.parse(missingGalleryAssetIds), []);
+      loading = false;
+      if (cancelled) return;
+      if (result.assets.length) {
+        setGalleryAssets((current) => {
+          const merged = new Map(result.assets.map((asset) => [asset.id, asset]));
+          current.forEach((asset) => merged.set(asset.id, asset));
+          return [...merged.values()].sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+        });
+      }
+      setGalleryError(result.failedIds.length
+        ? "Certaines images des posts n’ont pas pu être chargées. Réessaie en revenant sur cet onglet."
+        : "");
+    };
+    void refresh();
+    window.addEventListener("focus", refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", refresh);
+    };
+  }, [accountEmail, galleryLoading, missingGalleryAssetIds]);
 
   useEffect(() => {
     if (
@@ -1999,9 +2043,27 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 <option value="band-dark">Bandeau noir</option>
                 <option value="card">Rectangle beige arrondi</option>
                 <option value="card-theme">Rectangle thème</option>
+                <option value="bubble">Bubble</option>
               </Dropdown>
+              {textBackdrop === "bubble" && (
+                <>
+                  <label className="field-label" htmlFor="text-bubble-target">Appliquer la bulle à</label>
+                  <Dropdown
+                    id="text-bubble-target"
+                    value={properties.textBubbleTarget ?? "both"}
+                    onChange={(event) => updatePostPageProperty("textBubbleTarget", event.target.value as TextBubbleTarget)}
+                  >
+                    <option value="both">Titre et description</option>
+                    <option value="title">Titre uniquement</option>
+                    <option value="description">Description uniquement</option>
+                  </Dropdown>
+                </>
+              )}
             </div>
           </section>
+
+          <StoreButtonsControls value={properties.storeButtons} assets={galleryAssets} loading={galleryLoading}
+            onChange={(value) => updatePostPageProperty("storeButtons", value)} />
 
           <section className="property-section image-property-section">
             <SectionHeading className="compact section-heading-with-action">

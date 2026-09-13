@@ -22,6 +22,12 @@ Un post contient de 1 à 10 pages distinctes. Une seule page correspond à une i
 
 La publication manuelle, le calendrier, les exports et les aperçus lisent directement les traductions des pages. La préparation des publications programmées vérifie les versions du post et de toutes ses pages.
 
+## Boutons des stores
+
+Chaque page conserve dans `properties.storeButtons` l’activation (désactivée par défaut), la disposition (`row` ou `column`), la marge depuis le bas (`bottomMargin`, de 0 à 80 % de la hauteur de la page, 6 % par défaut), la taille commune (`scale`, de 25 à 150 %, 100 % par défaut) et les références `iosAssetId` / `androidAssetId`. À la première activation, le Studio retrouve `store_apple.png` et `store_google.png` dans le dossier Galerie **Components**, sans distinction de casse pour le dossier. Les références restent stables même si les images sont ensuite déplacées.
+
+Les deux visuels sont centrés horizontalement, avec une largeur de référence de 38,4 % de la page chacun, ajustable par le réglage Taille tout en conservant leurs proportions d’origine. Ils utilisent le rendu et l’export communs aux aperçus, PNG et publications. Si un visuel activé manque, l’export signale l’erreur au lieu de produire une image incomplète. Les réglages des boutons sont indépendants du texte, du thème et des images libres.
+
 ## Conversion unique des données existantes
 
 `scripts/migrate-owned-pages.py` sert uniquement à convertir la base antérieure. L’application ne contient pas de chemins de compatibilité avec celle-ci.

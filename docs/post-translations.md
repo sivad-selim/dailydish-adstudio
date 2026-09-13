@@ -2,6 +2,10 @@
 
 Outil local : `scripts/post-translations.py`. Aucune fonction serveur, modification de l’interface, API d’IA ou publication Instagram. Base fixe : projet `daily-dish-b10b4`, Firestore `ad-studio`.
 
+Pour **créer** des posts ou une galerie avec des images de fond et leurs textes,
+utiliser l’[outil de création](post-creation.md). Le présent outil modifie uniquement
+les traductions des pages existantes.
+
 ## Connexion
 
 Python 3 et Google Cloud CLI (`gcloud`) sont nécessaires. Le script utilise le compte actif de `gcloud auth login`. Son jeton est récupéré en mémoire sans être affiché ni écrit dans le projet. Les droits IAM de ce compte s’appliquent (ce script n’est pas une frontière d’autorisation limitant le compte). Ne pas ajouter de clé de compte de service au dépôt.

@@ -30,6 +30,9 @@ export async function exportCanvasPng(canvas: HTMLDivElement, format: AdFormat, 
     value: string;
   }> = [];
   try {
+    if (canvas.querySelector("[data-missing-store-buttons]")) {
+      throw new Error("Les images des boutons App Store et Google Play doivent être chargées avant l’export. Vérifie Galerie → Components.");
+    }
     const targetFormat = FORMAT_CONFIG[format];
     await document.fonts.ready;
 
@@ -142,4 +145,3 @@ export async function exportCanvasPng(canvas: HTMLDivElement, format: AdFormat, 
     });
   }
 }
-

@@ -28,6 +28,8 @@ Le [modèle des posts](docs/post-model.md) décrit les pages possédées par cha
 
 L’[outil de traduction](docs/post-translations.md) utilise la connexion Google locale pour lire et traduire les pages demandées depuis une conversation, avec sauvegarde et protection contre les modifications concurrentes.
 
+L’[outil de création](docs/post-creation.md) crée des posts simples ou une galerie depuis des images locales utilisées comme fonds et des textes traduits. Il réutilise les réglages du Studio, prépare un plan vérifiable et permet de reprendre un import sans doublons. Les posts restent en brouillon.
+
 ## Production
 
 Le Studio est hébergé sur Firebase Hosting, cible `ad-studio`, et utilise la base Firestore nommée `ad-studio` du projet `daily-dish-b10b4`.

@@ -47,6 +47,42 @@ function loadPostPages(overrides = {}) {
   return exports;
 }
 
+test("store buttons default to disabled and each page owns its settings", () => {
+  const api = loadPostPages();
+  const first = api.createDefaultPageLayout();
+  first.storeButtons.enabled = true;
+  assert.equal(api.createDefaultPageLayout().storeButtons.enabled, false);
+  assert.equal(api.readPostPage("existing", {properties: {}}).properties.storeButtons.enabled, false);
+  assert.equal(api.createDefaultPageLayout().storeButtons.bottomMargin, 6);
+  assert.equal(api.readPostPage("existing", {properties: {storeButtons: {bottomMargin: 0}}}).properties.storeButtons.bottomMargin, 0);
+  assert.equal(api.readPostPage("existing", {properties: {}}).properties.storeButtons.scale, 100);
+  const parsed = api.readPostPage("invalid", {properties: {storeButtons: {enabled: "true", direction: "diagonal", bottomMargin: 200}}});
+  assert.equal(parsed.properties.storeButtons.enabled, false);
+  assert.equal(parsed.properties.storeButtons.direction, "row");
+  assert.equal(parsed.properties.storeButtons.bottomMargin, 80);
+});
+
+test("both store badges, arrangement and bottom margin survive saving and reloading", async () => {
+  let saved;
+  const api = loadPostPages({
+    runTransaction: async (_, operation) => operation({
+      get: async () => ({id: "page", exists: () => true, data: () => saved ?? {}}),
+      update: (_, data) => { saved = {...saved, ...data}; },
+    }),
+    onSnapshot: (_, callback) => callback({docs: [{id: "page", data: () => saved}]}),
+  });
+  const page = api.readPostPage("page", {});
+  const buttons = {enabled: true, direction: "column", bottomMargin: 10, scale: 125, iosAssetId: "gallery/apple.png", androidAssetId: "gallery/google.png"};
+  await api.savePostPage({...page, properties: {...page.properties, storeButtons: buttons}});
+  api.subscribeToPostPages(([loaded]) => assert.deepEqual(JSON.parse(JSON.stringify(loaded.properties.storeButtons)), buttons), assert.fail);
+  await api.savePostPage({...page, properties: {...page.properties, storeButtons: {...buttons, enabled: false}}});
+  api.subscribeToPostPages(([loaded]) => {
+    assert.equal(loaded.properties.storeButtons.enabled, false);
+    assert.equal(loaded.properties.storeButtons.iosAssetId, buttons.iosAssetId);
+    assert.equal(loaded.properties.storeButtons.bottomMargin, 10);
+  }, assert.fail);
+});
+
 test("the last image enabled wins, including after unchecking and rechecking", () => {
   const api = loadPostPages();
   let images = ["a", "b", "c"].map((id) => api.createPageImage(id));

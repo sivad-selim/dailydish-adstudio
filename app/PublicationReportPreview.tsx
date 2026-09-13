@@ -33,7 +33,7 @@ export function PublicationReportPreview({imagePath, postPage, title, descriptio
       urls.delete(imagePath);
       void coverUrl(imagePath).then((url) => setImage({path: imagePath, url})).catch(() => setImage(null));
     }} /> : <span aria-label="Aperçu indisponible">—</span>)
-      : postPage ? <PageCanvasPreview postPage={postPage} language={language} messageTitle={title} messageDescription={description} galleryAssets={assets} previewWidth={76} showPlaceholder={false} />
+      : postPage ? <PageCanvasPreview postPage={postPage} language={language} messageTitle={title} messageDescription={description} galleryAssets={assets} previewWidth={76} />
       : <span aria-label="Aperçu indisponible">—</span>}
   </div>;
 }

@@ -20,7 +20,9 @@ export type TextBackdrop =
   | "band-theme"
   | "band-dark"
   | "card"
-  | "card-theme";
+  | "card-theme"
+  | "bubble";
+export type TextBubbleTarget = "both" | "title" | "description";
 export type AdTheme = string;
 export type AdBackground =
   | "solid"
@@ -81,6 +83,15 @@ export type TextColorSettings = {
   assistant: TextColorSelection;
 };
 
+export type StoreButtonSettings = {
+  enabled: boolean;
+  direction: "row" | "column";
+  bottomMargin: number;
+  scale: number;
+  iosAssetId: string;
+  androidAssetId: string;
+};
+
 export type PageLayout = {
   imagePositionVersion?: 1;
   formatChangeAnchor?: FormatChangeAnchor;
@@ -95,6 +106,8 @@ export type PageLayout = {
   textRotation: number;
   showAssistantLabel: boolean;
   textBackdrop: TextBackdrop;
+  textBubbleTarget?: TextBubbleTarget;
+  storeButtons: StoreButtonSettings;
   images: PageImage[];
 };
 
@@ -184,6 +197,8 @@ export const DEFAULT_PAGE_LAYOUT: PageLayout = {
   textRotation: 0,
   showAssistantLabel: true,
   textBackdrop: "gradient-light",
+  textBubbleTarget: "both",
+  storeButtons: { enabled: false, direction: "row", bottomMargin: 6, scale: 100, iosAssetId: "", androidAssetId: "" },
   images: [createPageImage("hero-image-1")],
 };
 
@@ -199,5 +214,12 @@ export const createDefaultPageLayout = (): PageLayout => ({
     assistant: { ...DEFAULT_PAGE_LAYOUT.textColors.assistant },
   },
   images: DEFAULT_PAGE_LAYOUT.images.map((image) => ({ ...image })),
+  storeButtons: { ...DEFAULT_PAGE_LAYOUT.storeButtons },
 });
 
+export const createDefaultPostPageContent = (postId: string): Omit<PostPage, "id" | "updatedAt"> => ({
+  name: "Nouvelle page", postId,
+  translations: {en: {title: "", description: ""}, fr: {title: "", description: ""}, pt: {title: "", description: ""}},
+  format: "portrait", theme: "dailydish", background: "cream", backgroundAssetId: "",
+  properties: createDefaultPageLayout(),
+});

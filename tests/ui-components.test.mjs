@@ -15,6 +15,46 @@ after(async () => { await server?.close(); });
 const base = { galleryAssets: [], gallery: true, publications: [], status: 'ready' };
 const render = (props) => renderToStaticMarkup(createElement(PostPreview, { ...base, ...props }));
 
+test('store buttons use the supplied Components assets and retain their IDs after a folder move', async () => {
+  const {resolveStoreButtonAssets} = await server.ssrLoadModule('/app/storeButtons.ts');
+  const settings = {iosAssetId: '', androidAssetId: ''};
+  const assets = [
+    {id: 'wrong', name: 'store_apple.png', folderId: 'elsewhere'},
+    {id: 'ios', name: 'store_apple.png', folderId: 'components'},
+    {id: 'android', name: 'store_google.png', folderId: 'components'},
+  ];
+  const folders = [{id: 'components', name: ' Components '}];
+  const resolved = resolveStoreButtonAssets(settings, assets, folders);
+  assert.equal(resolved.ios.id, 'ios');
+  assert.equal(resolved.android.id, 'android');
+  assert.equal(resolveStoreButtonAssets(settings, assets, []).ios, undefined);
+  assert.equal(resolveStoreButtonAssets({iosAssetId: 'ios', androidAssetId: 'android'}, assets, []).ios.id, 'ios');
+});
+
+test('page previews include both badges in either arrangement, hide them when disabled and identify missing assets', async () => {
+  const {PageCanvasPreview} = await server.ssrLoadModule('/app/PageCanvasPreview.tsx');
+  const {createDefaultPostPageContent} = await server.ssrLoadModule('/firebase/postPageModel.ts');
+  const page = {...createDefaultPostPageContent('post'), id: 'page', updatedAt: 0};
+  page.properties.images = [];
+  const assets = [{id: 'ios', url: '/apple.png'}, {id: 'android', url: '/google.png'}];
+  const preview = (galleryAssets = assets) => renderToStaticMarkup(createElement(PageCanvasPreview, {
+    postPage: page, messageTitle: 'Test', messageDescription: '', galleryAssets,
+  }));
+  assert.doesNotMatch(preview(), /canvas-store-buttons/);
+  for (const direction of ['row', 'column']) {
+    page.properties.storeButtons = {enabled: true, direction, bottomMargin: 10, scale: 125, iosAssetId: 'ios', androidAssetId: 'android'};
+    const html = preview();
+    assert.match(html, new RegExp(`flex-direction:${direction};bottom:10%`));
+    assert.match(html, /--store-button-width:48cqw/);
+    assert.match(html, /class="canvas-image store-button-image" src="\/apple.png" data-gallery-asset-id="ios"/);
+    assert.match(html, /src="\/google.png" data-gallery-asset-id="android"/);
+    assert.doesNotMatch(html, /data-missing-store-buttons/);
+  }
+  assert.match(preview([]), /data-missing-store-buttons="true"/);
+  page.properties.storeButtons.bottomMargin = 0;
+  assert.match(preview(), /bottom:0%/);
+});
+
 test('selector card can be wrapped by a button without nested controls', () => {
   const html = renderToStaticMarkup(createElement('button', { type: 'button' }, createElement(PostPreview, base)));
   assert.equal((html.match(/<button\b/g) || []).length, 1);

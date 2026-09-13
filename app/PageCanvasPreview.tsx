@@ -4,6 +4,7 @@ import type { MessageLanguage } from "../firebase/messages";
 import { TEXT_SPACING, getImageAssetId, type PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
 import { CanvasBackgroundImage } from "./CanvasBackgroundImage";
+import { StoreButtonsPreview } from "./StoreButtonsPreview";
 import { ThemeableBackgroundArtwork } from "./ThemeableBackgroundArtwork";
 import { getBackgroundColorStyle, getDefaultBackgroundColors, getDefaultTextColors, getTextColorStyle, getThemeStyle, isDarkColor, resolveBackgroundColors, resolveTextColors } from "./themePalettes";
 const IMAGE_BASE_WIDTH = 47;
@@ -15,7 +16,6 @@ export function PageCanvasPreview({
   messageDescription,
   galleryAssets,
   language = "fr",
-  showPlaceholder = true,
   interactive = false,
   previewWidth,
   rootRef,
@@ -29,7 +29,6 @@ export function PageCanvasPreview({
   messageDescription: string;
   galleryAssets: GalleryAsset[];
   language?: MessageLanguage;
-  showPlaceholder?: boolean;
   interactive?: boolean;
   previewWidth?: number;
   rootRef?: Ref<HTMLDivElement>;
@@ -71,6 +70,25 @@ export function PageCanvasPreview({
   const [textVerticalPosition, textHorizontalPosition] =
     postPage.properties.textPosition.split("-");
 
+  const bubble = postPage.properties.textBackdrop === "bubble";
+  const bubbleTarget = postPage.properties.textBubbleTarget ?? "both";
+  const title = messageTitle.trim() ? (
+    <h2 className={messageTitle.length > 58 ? "long-title" : ""}>{messageTitle}</h2>
+  ) : null;
+  const description = messageDescription.trim() ? <p>{messageDescription}</p> : null;
+  const textContent = bubble ? (
+    <>
+      {bubbleTarget === "description" && title}
+      {(bubbleTarget === "both" ? title || description : bubbleTarget === "title" ? title : description) && (
+        <div className={`onboarding-text-bubble bubble-target-${bubbleTarget}`}>
+          {bubbleTarget !== "description" && title}
+          {bubbleTarget !== "title" && description}
+        </div>
+      )}
+      {bubbleTarget === "title" && description}
+    </>
+  ) : <>{title}{description}</>;
+
   return (
     <div
       ref={rootRef}
@@ -97,8 +115,8 @@ export function PageCanvasPreview({
       <div className="blob blob-purple" />
       <div className="blob blob-blue" />
 
-      <div
-        className={`ad-copy text-row-${textVerticalPosition} text-align-${textHorizontalPosition} text-backdrop-${postPage.properties.textBackdrop} ${postPage.properties.showAssistantLabel ? "with-assistant" : "without-assistant"} ${messageDescription ? "with-description" : "without-description"}`}
+      {(title || description || postPage.properties.showAssistantLabel) && <div
+        className={`ad-copy text-row-${textVerticalPosition} text-align-${textHorizontalPosition} text-backdrop-${postPage.properties.textBackdrop} ${postPage.properties.showAssistantLabel ? "with-assistant" : "without-assistant"} ${description ? "with-description" : "without-description"}`}
         style={
           {
             "--text-width": `${postPage.properties.textWidth}%`,
@@ -116,11 +134,8 @@ export function PageCanvasPreview({
             <span className="assistant-label-text">Assistant DailyDish</span>
           </div>
         )}
-        {(messageTitle || showPlaceholder) && <h2 className={messageTitle.length > 58 ? "long-title" : ""}>
-          {messageTitle || "Votre titre"}
-        </h2>}
-        {messageDescription && <p>{messageDescription}</p>}
-      </div>
+        {textContent}
+      </div>}
 
       {postPage.properties.images.map((image, imageIndex) => {
         const asset = galleryAssets.find(
@@ -183,7 +198,7 @@ export function PageCanvasPreview({
           </div>
         );
       })}
+      <StoreButtonsPreview settings={postPage.properties.storeButtons} assets={galleryAssets} />
     </div>
   );
 }
-

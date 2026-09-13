@@ -11,10 +11,10 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { allowedEmail, firebaseApp, firebaseAuth } from "./firebaseAuth";
-import { readTranslations, EMPTY_TRANSLATIONS, type MessageTranslations, type MessageLanguage } from "./messages";
+import { readTranslations, type MessageTranslations, type MessageLanguage } from "./messages";
 import { centerLegacyImages, type FormatChangeAnchor } from "../app/imagePositioning";
 
-import {createDefaultPageLayout, createPageImage, type AdFormat, type PageImage, type TextColorSelection, type PageLayout, type PostPage} from "./postPageModel";
+import {createDefaultPageLayout, createDefaultPostPageContent, createPageImage, type AdFormat, type PageImage, type TextColorSelection, type PageLayout, type PostPage} from "./postPageModel";
 export * from "./postPageModel";
 
 const database = getFirestore(firebaseApp, "ad-studio");
@@ -98,6 +98,7 @@ const readPageLayout = (
   fallback: PageLayout,
 ): PageLayout => {
   const properties = asRecord(value);
+  const storeButtons = asRecord(properties.storeButtons);
   const storedBackgroundColors = asRecord(properties.backgroundColors);
   const storedTextColors = asRecord(properties.textColors);
   const readTextColorSelection = (
@@ -200,9 +201,19 @@ const readPageLayout = (
         "band-dark",
         "card",
         "card-theme",
+        "bubble",
       ],
       fallback.textBackdrop,
     ),
+    textBubbleTarget: readEnum(properties.textBubbleTarget, ["both", "title", "description"] as const, "both"),
+    storeButtons: {
+      enabled: storeButtons.enabled === true,
+      direction: readEnum(storeButtons.direction, ["row", "column"], fallback.storeButtons.direction),
+      bottomMargin: Math.min(80, Math.max(0, readNumber(storeButtons.bottomMargin, fallback.storeButtons.bottomMargin))),
+      scale: Math.min(150, Math.max(25, readNumber(storeButtons.scale, fallback.storeButtons.scale))),
+      iosAssetId: typeof storeButtons.iosAssetId === "string" ? storeButtons.iosAssetId : "",
+      androidAssetId: typeof storeButtons.androidAssetId === "string" ? storeButtons.androidAssetId : "",
+    },
     images: readPageImages(properties.images, fallback.images),
   };
 };
@@ -294,9 +305,7 @@ export const subscribeToPostPages = (
 /** Layout defaults for a newly owned page. Text is copied by value. */
 export function newPostPageData(postId: string) {
   return {
-    name: "Nouvelle page", postId, translations: readTranslations(EMPTY_TRANSLATIONS),
-    format: "portrait", theme: "dailydish", background: "cream", backgroundAssetId: "",
-    properties: createDefaultPageLayout(), ownerEmail: allowedEmail,
+    ...createDefaultPostPageContent(postId), ownerEmail: allowedEmail,
     createdAt: serverTimestamp(), updatedAt: serverTimestamp(),
   };
 }

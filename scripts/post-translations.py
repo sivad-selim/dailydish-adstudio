@@ -18,6 +18,16 @@ LANGUAGES = ('fr', 'en', 'pt')
 FIELDS = ('title', 'description')
 
 
+def pack(value):
+    if isinstance(value, str): return {'stringValue': value}
+    if isinstance(value, bool): return {'booleanValue': value}
+    if isinstance(value, int): return {'integerValue': str(value)}
+    if isinstance(value, float): return {'doubleValue': value}
+    if isinstance(value, list): return {'arrayValue': {'values': [pack(x) for x in value]} if value else {}}
+    if isinstance(value, dict): return {'mapValue': {'fields': {k: pack(v) for k, v in value.items()}} if value else {}}
+    raise ValueError('Unsupported value')
+
+
 def unpack(value):
     for kind in ('stringValue', 'timestampValue', 'booleanValue', 'integerValue', 'doubleValue'):
         if kind in value:
