@@ -35,3 +35,9 @@ Backend dans `dailydish-kmp/functions` : build TypeScript et `node --test lib/ad
 Les tests `schedulingIntegration.test.js` nécessitent `FIRESTORE_EMULATOR_HOST` et utilisent exclusivement le projet fictif `demo-adstudio-scheduling`. Ils ne publient pas sur Instagram.
 
 Déployer les fonctions `publishAdStudioInstagram`, `setAdStudioScheduleSettings`, `prepareAdStudioSchedule`, `dispatchAdStudioSchedule`, `runAdStudioScheduledPublication`, `reportAdStudioPlanChanges`, `getAdStudioScheduleReports` depuis dailydish-kmp. Déployer les règles du database ad-studio et le hosting depuis dailydish-web-ad-studio. Les tests n’activent aucune publication réelle.
+
+## Six destinations
+
+Instagram et Facebook sont cochés par défaut dans la publication manuelle. Le calendrier programme systématiquement EN, FR et BR sur chacun des deux réseaux. Les trois exports de langue alimentent six tentatives indépendantes ; Facebook copie ses images avant de les partager à Meta. Les préparations déjà prêtes sont compatibles sans nouvel export. Les anciens identifiants de tentative Instagram sont conservés pour éviter les doublons. Le worker prend les deux secrets et revalide la programmation avant tout envoi public sur chaque réseau.
+
+Pour déployer cette évolution, mettre à jour `runAdStudioScheduledPublication` avant `dispatchAdStudioSchedule`, puis `prepareAdStudioSchedule`, `reportAdStudioPlanChanges`, `setAdStudioScheduleSettings` et `publishAdStudioFacebook`, et enfin le hosting.

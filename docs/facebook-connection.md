@@ -1,6 +1,6 @@
 # Publication Facebook depuis Ad Studio
 
-La fenêtre de publication manuelle permet de choisir Instagram, Facebook ou les deux, puis les pays de chaque réseau. Instagram reste sélectionné par défaut. Chaque destination conserve son propre texte, ses images et son résultat. Les visuels sont les mêmes JPEG 1080 × 1350 préparés pour Instagram, avec la traduction du pays (BR utilise le portugais). La légende reste limitée à 2 200 caractères pour ce parcours commun.
+La fenêtre de publication manuelle permet de choisir Instagram, Facebook ou les deux, puis les pays de chaque réseau. Instagram et Facebook sont sélectionnés par défaut, avec les six destinations. Chaque destination conserve son propre texte, ses images et son résultat. Les visuels sont les mêmes JPEG 1080 × 1350 préparés pour Instagram, avec la traduction du pays (BR utilise le portugais). La légende reste limitée à 2 200 caractères pour ce parcours commun.
 
 | Pays | Page | Identifiant |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ Avant le POST public, le serveur persiste `publishAttempted`. Une réponse perdu
 
 Effacer le suivi d’un envoi réussi archive son historique dans Firestore et ne supprime pas la publication Facebook. La date globale du calendrier reste renseignée si une autre destination Instagram ou Facebook est toujours publiée. Les cartes affichent séparément les pays publiés sur chaque réseau.
 
-La programmation automatique reste dédiée à Instagram. Le rapport commun inclut les étapes et résultats des publications manuelles Facebook avec le réseau, le pays, le visuel et le lien du post. Les événements Facebook sont enregistrés dans la même transaction que l’état de la publication. À la consultation du rapport, une migration par lots récupère les états Facebook antérieurs (marqués « Historique récupéré »), sans inventer les événements intermédiaires qui n’avaient pas été enregistrés. Déployer aussi `getAdStudioScheduleReports` avec cette version.
+La programmation automatique envoie aux six destinations Instagram/Facebook × EN/FR/BR au même horaire. Les trois exports par langue sont réutilisés ; le serveur crée une copie privée pour Facebook afin de ne pas invalider les liens Instagram. Les préparations existantes restent compatibles. Les identifiants de tentative Instagram historiques sont conservés ; ceux de Facebook sont séparés. Aucun rattrapage des dates passées n’est effectué. Le rapport commun inclut les étapes et résultats des publications manuelles Facebook avec le réseau, le pays, le visuel et le lien du post. Les événements Facebook sont enregistrés dans la même transaction que l’état de la publication. À la consultation du rapport, une migration par lots récupère les états Facebook antérieurs (marqués « Historique récupéré »), sans inventer les événements intermédiaires qui n’avaient pas été enregistrés. Déployer aussi `getAdStudioScheduleReports` avec cette version.
 
 ## Vérification
 
