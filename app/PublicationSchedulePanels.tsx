@@ -28,7 +28,7 @@ export function PublicationScheduleSettings({settings, disabled, save, children}
       <input id="planner-time" type="time" required value={time} disabled={disabled} onChange={(event) => setTime(event.target.value)} />
       </div>
       <Button type="submit" variant="primary" disabled={disabled || (time === settings.time && timeZone === settings.timeZone)}>Enregistrer</Button>
-      <p className="planner-settings-note">EN, FR et BR · Horaire commun aux posts à venir. Après l’heure, aucun rattrapage.</p>
+      <p className="planner-settings-note">Instagram et Facebook · EN, FR et BR · Six destinations au même horaire. Après l’heure, aucun rattrapage.</p>
     </form>
     {children}
   </section>;
@@ -52,7 +52,7 @@ export function PublicationScheduleReport({items, timeZone, entries = [], posts 
     {error && <p role="alert">{error}</p>}
     {loading && <p role="status">Chargement du rapport…</p>}
     {!items.length ? (!loading && !error && <p>Aucun événement pour le moment.</p>) : <div className="planner-report-scroll"><table className="planner-report-table">
-      <thead><tr><th scope="col">Date</th><th scope="col">Aperçu</th><th scope="col">Langue</th><th scope="col">Événement</th></tr></thead>
+      <thead><tr><th scope="col">Date</th><th scope="col">Aperçu</th><th scope="col">Réseau</th><th scope="col">Langue</th><th scope="col">Événement</th></tr></thead>
       <tbody>{items.map((item, index) => {
         const account: InstagramAccount = item.account === "fr" || item.account === "br" ? item.account : "en";
         const language = account === "br" ? "pt" : account;
@@ -64,12 +64,13 @@ export function PublicationScheduleReport({items, timeZone, entries = [], posts 
         const hasPost = Boolean(item.entryId || postId);
         const startsDay = index === 0 || day.format(items[index - 1].at) !== day.format(item.at);
         return <Fragment key={item.id}>
-        {startsDay && <tr className="planner-report-day"><th colSpan={4}><span>{day.format(item.at)}</span></th></tr>}
+        {startsDay && <tr className="planner-report-day"><th colSpan={5}><span>{day.format(item.at)}</span></th></tr>}
         <tr className={`planner-report-event ${item.kind}`}>
           <td><time dateTime={new Date(item.at).toISOString()}><span>{day.format(item.at)}</span><strong>{time.format(item.at)}</strong></time></td>
           <td>{hasPost ? <PublicationReportPreview imagePath={item.covers?.[account]} postPage={postPage} title={title} description={message?.translations[language]?.description ?? ""} language={language} assets={assets} /> : <span aria-label="Sans aperçu">—</span>}</td>
+          <td>{item.platform === "all" ? "Instagram + Facebook" : item.platform === "facebook" ? "Facebook" : "Instagram"}</td>
           <td className="planner-report-language">{item.account ? item.account.toUpperCase() : hasPost ? "EN · FR · BR" : "—"}</td>
-          <td>{(hasPost ? title : item.name) && <strong>{hasPost ? title : item.name}</strong>}<p>{item.message}</p></td>
+          <td>{(hasPost ? title : item.name) && <strong>{hasPost ? title : item.name}</strong>}<p>{item.message}</p>{item.permalink && /^https:\/\/(www\.)?facebook\.com\//.test(item.permalink) && <a href={item.permalink} target="_blank" rel="noreferrer">Voir la publication</a>}</td>
         </tr></Fragment>;
       })}</tbody>
     </table></div>}

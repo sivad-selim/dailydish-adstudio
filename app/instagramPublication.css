@@ -17,7 +17,7 @@
 .instagram-language-previews textarea:disabled { background: #f4f0f7; }
 .instagram-publish-actions { display: grid; justify-items: center; gap: 16px; margin: 24px 0; }
 .instagram-publish-actions > button { min-width: 240px; }
-.instagram-account-checks { display: flex; gap: 26px; }
+.instagram-account-checks { display: flex; flex-wrap: wrap; gap: 16px 26px; }
 .instagram-account-checks label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #7652a8; }
 .instagram-account-checks input { accent-color: #7652a8; width: 18px; height: 18px; }
 .instagram-publication-editor footer { display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px; padding-top: 20px; border-top: 1px solid #e4d9ed; }

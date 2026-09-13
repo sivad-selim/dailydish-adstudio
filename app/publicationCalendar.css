@@ -115,7 +115,8 @@
 .planner-report-table td { padding: 14px 16px; border-top: 1px solid var(--line); vertical-align: middle; }
 .planner-report-table :is(th, td):first-child { width: 150px; padding-left: 0; }
 .planner-report-table :is(th, td):nth-child(2) { width: 110px; }
-.planner-report-table :is(th, td):nth-child(3) { width: 130px; }
+.planner-report-table :is(th, td):nth-child(3) { width: 110px; }
+.planner-report-table :is(th, td):nth-child(4) { width: 130px; }
 .planner-report-language { white-space: nowrap; font-weight: 700; color: var(--purple); }
 .planner-report-preview { width: 76px; min-height: 96px; display: grid; place-items: center; border-radius: 8px; overflow: hidden; background: #f4f1f6; color: var(--muted); }
 .planner-report-preview > img { display: block; width: 76px; height: 96px; object-fit: contain; }

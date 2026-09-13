@@ -49,6 +49,11 @@ service cloud.firestore {
         && request.resource.data.pageIds.toSet().size() == request.resource.data.pageIds.size();
     }
 
+    match /facebook-publications/{publicationId} {
+      allow read: if isDailyDishOwner();
+      allow write: if false;
+    }
+
     match /instagram-publications/{publicationId} {
       allow read: if isDailyDishOwner();
       allow write: if false;

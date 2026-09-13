@@ -64,7 +64,7 @@ export function usePublicationScheduling(posts: StudioPost[], postPages: PostPag
       const interrupted = jobs.some((item) => item.status === "running" && now.getTime() - (item.startedAt ?? 0) > 10 * 60000);
       return {label: interrupted ? "Résultat à vérifier" : "Publication en cours…", refresh: false};
     }
-    if (jobs.length) return {label: jobs.every((item) => item.status === "published") ? "Envois terminés" : "Voir le rapport", refresh: false};
+    if (jobs.length) return {label: jobs.length === 6 && jobs.every((item) => item.status === "published") ? "6 envois terminés" : "Voir le rapport", refresh: false};
     if (!isFutureSchedule(entry.date, settings, now)) return {label: "", refresh: false};
     const data = prepared.find((item) => item.entryId === entry.id);
     const post = posts.find((item) => item.id === entry.postId);
@@ -73,7 +73,7 @@ export function usePublicationScheduling(posts: StudioPost[], postPages: PostPag
     if (JSON.stringify(Object.entries(versions).sort()) !== JSON.stringify(Object.entries(data.clientVersions).sort())) return {label: "À actualiser", refresh: true};
     if (data.status === "failed") return {label: "Préparation échouée", refresh: true, message: data.message};
     if (data.status === "preparing") return {label: "Préparation incomplète", refresh: true};
-    return {label: "Programmé · EN FR BR", refresh: false};
+    return {label: "Programmé · Instagram + Facebook · EN FR BR", refresh: false};
   }
   return {settings, loaded, error, progress, saving, prepare, saveSettings, state, busy: Boolean(progress.entryId) || saving};
 }

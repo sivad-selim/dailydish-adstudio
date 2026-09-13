@@ -44,6 +44,15 @@ service firebase.storage {
       allow update, delete: if false;
     }
 
+    match /facebook-publishing/{uid}/{entryId}/{account}/{fileName} {
+      allow read: if isDailyDishOwner();
+      allow create: if isDailyDishOwner() && request.auth.uid == uid
+        && account in ['en', 'fr', 'br']
+        && request.resource.size <= 8 * 1024 * 1024
+        && request.resource.contentType == 'image/jpeg';
+      allow update, delete: if false;
+    }
+
     match /{file=**} {
       allow read, write: if false;
     }

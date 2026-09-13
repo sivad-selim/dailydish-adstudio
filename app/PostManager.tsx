@@ -22,7 +22,7 @@ import type { PostFolder } from "../firebase/postFolders";
 import { type PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
 import type { StudioPost, StudioPostType } from "../firebase/posts";
-import { useInstagramHistory } from "./InstagramPublicationStatus";
+import { useSocialHistory } from "./InstagramPublicationStatus";
 import {
   DRAG_AUTO_SCROLL_EDGE,
   DRAG_AUTO_SCROLL_MAX_SPEED,
@@ -99,7 +99,7 @@ export function PostManager({
   onRenameFolder,
 }: PostManagerProps) {
   const [postTypeFolderId, setPostTypeFolderId] = useState<string | null>(null);
-  const instagramHistory = useInstagramHistory();
+  const instagramHistory = useSocialHistory();
   const [creatingPost, setCreatingPost] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [expandedPostId, setExpandedPostId] = useState(viewStateRef.current.expandedPostId);

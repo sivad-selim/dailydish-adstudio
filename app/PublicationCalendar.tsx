@@ -10,7 +10,7 @@ import { subscribeToPublicationPlan, updatePublicationPlan, type PlannedPublicat
 import { PostPreview } from "./components/PostPreview";
 import { SectionHeading } from "./SectionHeading";
 import { Dropdown } from "./Dropdown";
-import { useInstagramHistory } from "./InstagramPublicationStatus";
+import { useSocialHistory } from "./InstagramPublicationStatus";
 import { InstagramPublicationEditor } from "./InstagramPublicationEditor";
 import { orderFolderPosts } from "./postOrder";
 import { localDateKey, monthDays, movePublication, placeUnscheduled } from "./calendarModel";
@@ -25,7 +25,7 @@ type Props = { posts: StudioPost[]; postPages: PostPage[]; folders: PostFolder[]
 const displayDate = (date: string) => date ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR") : "Sans date";
 
 export function PublicationCalendar({ posts, postPages, folders, galleryAssets, loading }: Props) {
-  const instagramHistory = useInstagramHistory();
+  const instagramHistory = useSocialHistory();
   const scheduling = usePublicationScheduling(posts, postPages, galleryAssets);
   const [entries, setEntries] = useState<PlannedPublication[]>([]);
   const [syncing, setSyncing] = useState(true);

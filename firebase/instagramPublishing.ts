@@ -5,6 +5,7 @@ import { firebaseApp, firebaseAuth } from "./firebaseAuth";
 import type { InstagramAccount } from "./instagram";
 
 export type InstagramPublication = {
+  platform?: "instagram" | "facebook";
   entryId: string; postId: string; account: InstagramAccount; imagePath: string; imagePaths?: string[]; preparedCount?: number; processingIndex?: number; phase?: "preparing" | "publishing"; caption: string;
   status: "pending" | "failed" | "uncertain" | "published";
   permalink?: string; message?: string; publishedAt?: string; leaseUntil?: number;

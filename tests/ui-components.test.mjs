@@ -47,3 +47,41 @@ test('shared headers retain the page heading, description and action controls', 
   assert.match(html, /<p>Description<\/p>/);
   assert.match(html, /<button>Nouveau dossier<\/button>/);
 });
+
+test('Facebook history stays distinct from Instagram for the same country', () => {
+  const html = render({publications: [
+    {account: 'fr', status: 'published'},
+    {account: 'fr', platform: 'facebook', status: 'published'},
+    {account: 'br', platform: 'facebook', status: 'failed'},
+  ]});
+  assert.match(html, /Instagram · France/);
+  assert.match(html, /Facebook · France/);
+  assert.equal((html.match(/🇫🇷/gu) || []).length, 2);
+  assert.doesNotMatch(html, /🇧🇷/u);
+});
+
+test('publication editor selects both networks by default', async () => {
+  const {InstagramPublicationEditor} = await server.ssrLoadModule('/app/InstagramPublicationEditor.tsx');
+  const html = renderToStaticMarkup(createElement(InstagramPublicationEditor, {
+    entry: {id: 'entry', postId: 'post'}, postPages: [], assets: [], disabled: false, error: '', remove() {}, close() {},
+  }));
+  assert.match(html, /checked=""\/>Instagram/);
+  assert.match(html, /checked=""\/>Facebook/);
+});
+
+test('report shows Facebook alongside legacy Instagram with its country, error and publication link', async () => {
+  const {PublicationScheduleReport} = await server.ssrLoadModule('/app/PublicationSchedulePanels.tsx');
+  const html = renderToStaticMarkup(createElement(PublicationScheduleReport, {
+    timeZone: 'Europe/Paris', items: [
+      {id: 'fb', at: 1000, platform: 'facebook', account: 'br', name: 'FB', message: 'Publié sur Facebook', kind: 'success', permalink: 'https://www.facebook.com/123_456'},
+      {id: 'ig', at: 999, account: 'fr', name: 'IG', message: 'Instagram refusé', kind: 'error'},
+    ],
+  }));
+  assert.match(html, /<th scope="col">Réseau<\/th>/);
+  assert.match(html, /<td>Facebook<\/td>/);
+  assert.match(html, /<td>Instagram<\/td>/);
+  assert.match(html, /BR/);
+  assert.match(html, /Instagram refusé/);
+  assert.match(html, /href="https:\/\/www.facebook.com\/123_456"/);
+  assert.match(html, /colSpan="5"/i);
+});

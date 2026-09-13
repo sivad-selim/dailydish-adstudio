@@ -30,7 +30,7 @@ test('report uses the account-specific title, keeps image-only posts untitled an
   const html = renderToStaticMarkup(createElement(panels.PublicationScheduleReport, {items, timeZone: 'America/Sao_Paulo'}));
   for (const title of ['English title', 'Titre français', 'Título brasileiro']) assert.match(html, new RegExp(`<strong>${title}</strong>`));
   assert.doesNotMatch(html, /internal-file-name/);
-  assert.match(html, /<th scope="col">Date<\/th><th scope="col">Aperçu<\/th><th scope="col">Langue<\/th><th scope="col">Événement<\/th>/);
+  assert.match(html, /<th scope="col">Date<\/th><th scope="col">Aperçu<\/th><th scope="col">Réseau<\/th><th scope="col">Langue<\/th><th scope="col">Événement<\/th>/);
   assert.equal((html.match(/<strong>English title<\/strong>/g) || []).length, 1);
 });
 test('report separates local calendar days and renders numbered pagination', () => {
