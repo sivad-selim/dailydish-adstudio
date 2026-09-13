@@ -1,9 +1,9 @@
 import {useEffect, useRef, useState} from "react";
-import type {CampaignLanguage} from "../firebase/campaigns";
-import type {Creation} from "../firebase/creations";
+import type {MessageLanguage} from "../firebase/messages";
+import type {PostPage} from "../firebase/postPages";
 import type {GalleryAsset} from "../firebase/gallery";
 import {instagramImageUrl} from "../firebase/instagramPublishing";
-import {CreationCanvasPreview} from "./CreationCanvasPreview";
+import {PageCanvasPreview} from "./PageCanvasPreview";
 
 // Many events refer to the same cover. Resolve its Storage URL once per session.
 const urls = new Map<string, Promise<string>>();
@@ -14,8 +14,8 @@ function coverUrl(path: string) {
   }
   return urls.get(path)!;
 }
-export function PublicationReportPreview({imagePath, creation, title, description, language, assets}: {
-  imagePath?: string; creation?: Creation; title: string; description: string; language: CampaignLanguage; assets: GalleryAsset[];
+export function PublicationReportPreview({imagePath, postPage, title, description, language, assets}: {
+  imagePath?: string; postPage?: PostPage; title: string; description: string; language: MessageLanguage; assets: GalleryAsset[];
 }) {
   const retried = useRef(false);
   const [image, setImage] = useState<{path: string; url: string} | null>(null);
@@ -33,7 +33,7 @@ export function PublicationReportPreview({imagePath, creation, title, descriptio
       urls.delete(imagePath);
       void coverUrl(imagePath).then((url) => setImage({path: imagePath, url})).catch(() => setImage(null));
     }} /> : <span aria-label="Aperçu indisponible">—</span>)
-      : creation ? <CreationCanvasPreview creation={creation} language={language} campaignTitle={title} campaignDescription={description} galleryAssets={assets} previewWidth={76} showPlaceholder={false} />
+      : postPage ? <PageCanvasPreview postPage={postPage} language={language} messageTitle={title} messageDescription={description} galleryAssets={assets} previewWidth={76} showPlaceholder={false} />
       : <span aria-label="Aperçu indisponible">—</span>}
   </div>;
 }

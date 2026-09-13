@@ -1,13 +1,12 @@
 import {useEffect, useRef, useState} from "react";
-import type {Campaign} from "../firebase/campaigns";
-import type {Creation} from "../firebase/creations";
+import type {PostPage} from "../firebase/postPages";
 import type {StudioPost} from "../firebase/posts";
 import type {GalleryAsset} from "../firebase/gallery";
 import type {PlannedPublication} from "../firebase/publicationPlan";
 import {DEFAULT_SCHEDULE, isFutureSchedule, saveScheduleSettings, subscribePreparedSchedules, subscribeScheduledAttempts, subscribeScheduleSettings, type PreparedSchedule, type ScheduleSettings, type ScheduledAttempt} from "../firebase/scheduling";
 import {prepareScheduledPost, scheduleSourceVersions} from "./prepareScheduledPost";
 
-export function usePublicationScheduling(posts: StudioPost[], creations: Creation[], campaigns: Campaign[], assets: GalleryAsset[]) {
+export function usePublicationScheduling(posts: StudioPost[], postPages: PostPage[],  assets: GalleryAsset[]) {
   const [settings, setSettings] = useState(DEFAULT_SCHEDULE);
   const [loaded, setLoaded] = useState(false);
   const [prepared, setPrepared] = useState<PreparedSchedule[]>([]);
@@ -43,7 +42,7 @@ export function usePublicationScheduling(posts: StudioPost[], creations: Creatio
     setError("");
     setProgress({entryId: entry.id, message: "Préparation…"});
     try {
-      await prepareScheduledPost(entry, post, creations, campaigns, assets, (message) => {if (mounted.current) setProgress({entryId: entry.id, message});});
+      await prepareScheduledPost(entry, post, postPages, assets, (message) => {if (mounted.current) setProgress({entryId: entry.id, message});});
     } catch (failure) {
       if (mounted.current) setError(failure instanceof Error ? failure.message : "La préparation a échoué.");
     } finally {
@@ -70,7 +69,7 @@ export function usePublicationScheduling(posts: StudioPost[], creations: Creatio
     const data = prepared.find((item) => item.entryId === entry.id);
     const post = posts.find((item) => item.id === entry.postId);
     if (!data || data.revision !== entry.scheduleRevision || data.date !== entry.date) return {label: "À préparer", refresh: true};
-    const versions = post ? scheduleSourceVersions(post, creations, campaigns) : {};
+    const versions = post ? scheduleSourceVersions(post, postPages) : {};
     if (JSON.stringify(Object.entries(versions).sort()) !== JSON.stringify(Object.entries(data.clientVersions).sort())) return {label: "À actualiser", refresh: true};
     if (data.status === "failed") return {label: "Préparation échouée", refresh: true, message: data.message};
     if (data.status === "preparing") return {label: "Préparation incomplète", refresh: true};

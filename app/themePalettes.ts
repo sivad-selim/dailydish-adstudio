@@ -5,7 +5,7 @@ import type {
   TextColorSelection,
   TextColorSettings,
   TextColorTone,
-} from "../firebase/creations";
+} from "../firebase/postPages";
 import {
   CAPTURED_THEME_PALETTES,
   type CapturedThemePalette,

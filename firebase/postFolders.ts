@@ -13,14 +13,14 @@ import {
 } from "firebase/firestore";
 import { allowedEmail, firebaseApp, firebaseAuth } from "./firebaseAuth";
 
-export type CreationFolder = {
+export type PostFolder = {
   id: string;
   name: string;
   postOrder?: string[];
 };
 
 const folderDatabase = getFirestore(firebaseApp, "ad-studio");
-const foldersCollection = collection(folderDatabase, "creation-folders");
+const foldersCollection = collection(folderDatabase, "post-folders");
 
 const assertAuthorizedUser = () => {
   const email = firebaseAuth.currentUser?.email?.trim().toLowerCase() ?? "";
@@ -29,8 +29,8 @@ const assertAuthorizedUser = () => {
   }
 };
 
-export const subscribeToCreationFolders = (
-  onFolders: (folders: CreationFolder[]) => void,
+export const subscribeToPostFolders = (
+  onFolders: (folders: PostFolder[]) => void,
   onError: (error: Error) => void,
 ): Unsubscribe => {
   assertAuthorizedUser();
@@ -55,7 +55,7 @@ export const subscribeToCreationFolders = (
   );
 };
 
-export const createCreationFolder = async (name: string): Promise<string> => {
+export const createPostFolder = async (name: string): Promise<string> => {
   assertAuthorizedUser();
   const normalizedName = name.trim();
   if (!normalizedName) throw new Error("Le nom du dossier est vide.");
@@ -69,12 +69,12 @@ export const createCreationFolder = async (name: string): Promise<string> => {
   return folder.id;
 };
 
-export const deleteCreationFolder = async (folderId: string): Promise<void> => {
+export const deletePostFolder = async (folderId: string): Promise<void> => {
   assertAuthorizedUser();
   await deleteDoc(doc(foldersCollection, folderId));
 };
 
-export const renameCreationFolder = async (
+export const renamePostFolder = async (
   folderId: string,
   name: string,
 ): Promise<void> => {

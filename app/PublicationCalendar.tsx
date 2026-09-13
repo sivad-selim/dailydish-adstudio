@@ -3,9 +3,8 @@ import { PageHeader, Icon } from "./components";
 
 import { useEffect, useRef, useState } from "react";
 import type { StudioPost } from "../firebase/posts";
-import type { Creation } from "../firebase/creations";
-import type { CreationFolder } from "../firebase/creationFolders";
-import type { Campaign } from "../firebase/campaigns";
+import type { PostPage } from "../firebase/postPages";
+import type { PostFolder } from "../firebase/postFolders";
 import type { GalleryAsset } from "../firebase/gallery";
 import { subscribeToPublicationPlan, updatePublicationPlan, type PlannedPublication } from "../firebase/publicationPlan";
 import { PostPreview } from "./components/PostPreview";
@@ -22,12 +21,12 @@ import {PublicationReportBrowser} from "./PublicationReportBrowser";
 import {isFutureSchedule, zonedMinute} from "../firebase/scheduling";
 import "./publicationCalendar.css";
 
-type Props = { posts: StudioPost[]; creations: Creation[]; folders: CreationFolder[]; campaigns: Campaign[]; galleryAssets: GalleryAsset[]; loading: boolean };
+type Props = { posts: StudioPost[]; postPages: PostPage[]; folders: PostFolder[];  galleryAssets: GalleryAsset[]; loading: boolean };
 const displayDate = (date: string) => date ? new Date(`${date}T12:00:00`).toLocaleDateString("fr-FR") : "Sans date";
 
-export function PublicationCalendar({ posts, creations, folders, campaigns, galleryAssets, loading }: Props) {
+export function PublicationCalendar({ posts, postPages, folders, galleryAssets, loading }: Props) {
   const instagramHistory = useInstagramHistory();
-  const scheduling = usePublicationScheduling(posts, creations, campaigns, galleryAssets);
+  const scheduling = usePublicationScheduling(posts, postPages, galleryAssets);
   const [entries, setEntries] = useState<PlannedPublication[]>([]);
   const [syncing, setSyncing] = useState(true);
   const [error, setError] = useState("");
@@ -75,12 +74,12 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
     }
   }, [entries, unavailable, scheduling.settings]);
   const patch = (id: string, changes: Partial<PlannedPublication>) => save((items) => items.map((item) => item.id === id ? { ...item, ...changes } : item));
-  const pagesFor = (post: StudioPost) => post.pageIds.map((id) => creations.find((page) => page.id === id)).filter((page): page is Creation => Boolean(page));
+  const pagesFor = (post: StudioPost) => post.pageIds.map((id) => postPages.find((page) => page.id === id)).filter((page): page is PostPage => Boolean(page));
   const postName = (post?: StudioPost) => post ? pagesFor(post)[0]?.name || "Post sans titre" : "Post supprimé";
   const visibleEntries = entries.filter((entry) => filter === "all" || (filter === "published" ? Boolean(entry.publishedAt) : !entry.publishedAt));
   const edited = entries.find((entry) => entry.id === editingId);
   function postVisual(post: StudioPost, entryId?: string) {
-    return <PostPreview creation={pagesFor(post)[0]} campaigns={campaigns} galleryAssets={galleryAssets} gallery={post.type === "gallery"}
+    return <PostPreview postPage={pagesFor(post)[0]} galleryAssets={galleryAssets} gallery={post.type === "gallery"}
       publications={instagramHistory.items.filter((item) => item.postId === post.id && (!entryId || item.entryId === entryId))} status={instagramHistory.status} />;
   }
   function openPicker(date: string) { setTargetDate(date); setSearch(""); setPickerFilter("all"); picker.current?.showModal(); }
@@ -153,7 +152,7 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
       : <><p className="planner-help">Glisse les publications pour organiser leur ordre. Les dates restent indépendantes.</p><div className="planner-order-list">{visibleEntries.map((entry, index) => card(entry, index))}</div>{!visibleEntries.length && <p className="planner-empty">Aucune publication ici. Ajoute un post pour commencer.</p>}</>}
     </div>
     <div id="planner-panel-report" role="tabpanel" aria-labelledby="planner-tab-report" hidden={panel !== "report"}>
-    {panel === "report" && <PublicationReportBrowser timeZone={scheduling.settings.timeZone} entries={entries} posts={posts} creations={creations} campaigns={campaigns} assets={galleryAssets} />}
+    {panel === "report" && <PublicationReportBrowser timeZone={scheduling.settings.timeZone} entries={entries} posts={posts} postPages={postPages} assets={galleryAssets} />}
     </div>
     <dialog ref={picker} className="planner-dialog"><header><div><h3>Ajouter un post</h3><p>{targetDate ? `Pour le ${displayDate(targetDate)}` : "Dans les posts à planifier"}</p></div><button aria-label="Fermer le sélecteur" onClick={() => picker.current?.close()}><Icon name="close" /></button></header>
       <div className="planner-toolbar"><input type="search" placeholder="Rechercher un post ou un dossier" aria-label="Rechercher un post ou un dossier" value={search} onChange={(event) => setSearch(event.target.value)} /><Dropdown aria-label="Filtrer les posts disponibles" value={pickerFilter} onChange={(event) => setPickerFilter(event.target.value)}><option value="all">Tous les posts</option><option value="unpublished">Jamais publiés</option><option value="published">Déjà publiés</option></Dropdown></div>
@@ -172,7 +171,7 @@ export function PublicationCalendar({ posts, creations, folders, campaigns, gall
       })}
     </dialog>
     <dialog ref={editor} className="planner-dialog planner-entry-dialog" onClose={() => setEditingId("")} onCancel={(event) => { if (editor.current?.querySelector('[aria-busy="true"]')) event.preventDefault(); }}>
-      {edited && <InstagramPublicationEditor key={edited.id} entry={edited} post={posts.find((post) => post.id === edited.postId)} creations={creations} campaigns={campaigns} assets={galleryAssets} disabled={unavailable} error={error} close={() => { editor.current?.close(); setEditingId(""); }} remove={() => { void save((items) => items.filter((item) => item.id !== edited.id)).then((ok) => { if (ok) { editor.current?.close(); setEditingId(""); } }); }} />}
+      {edited && <InstagramPublicationEditor key={edited.id} entry={edited} post={posts.find((post) => post.id === edited.postId)} postPages={postPages} assets={galleryAssets} disabled={unavailable} error={error} close={() => { editor.current?.close(); setEditingId(""); }} remove={() => { void save((items) => items.filter((item) => item.id !== edited.id)).then((ok) => { if (ok) { editor.current?.close(); setEditingId(""); } }); }} />}
     </dialog>
   </section>;
 }

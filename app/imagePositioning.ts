@@ -1,12 +1,12 @@
 import { FORMAT_CONFIG } from "./adFormats";
-import type { AdFormat, CreationProperties } from "../firebase/creations";
+import type { AdFormat, PageLayout } from "../firebase/postPages";
 
 export type FormatChangeAnchor = "top" | "center" | "bottom";
 
 const halfHeight = (format: AdFormat) =>
   50 * FORMAT_CONFIG[format].height / FORMAT_CONFIG[format].width;
 
-export function centerLegacyImages(properties: CreationProperties, format: AdFormat): CreationProperties {
+export function centerLegacyImages(properties: PageLayout, format: AdFormat): PageLayout {
   if (properties.imagePositionVersion === 1 && properties.images.every((image) => Number.isInteger(image.y))) return properties;
   // Previous coordinates used the 9:16 midpoint at a fixed distance from the bottom.
   const offset = properties.imagePositionVersion === 1 ? 0 : halfHeight(format) - halfHeight("story");
@@ -17,7 +17,7 @@ export function centerLegacyImages(properties: CreationProperties, format: AdFor
   };
 }
 
-export function changeImageFormat(properties: CreationProperties, from: AdFormat, to: AdFormat, anchor: FormatChangeAnchor = "center"): CreationProperties {
+export function changeImageFormat(properties: PageLayout, from: AdFormat, to: AdFormat, anchor: FormatChangeAnchor = "center"): PageLayout {
   const centered = centerLegacyImages(properties, from);
   const delta = halfHeight(to) - halfHeight(from);
   const offset = anchor === "top" ? -delta

@@ -1,12 +1,12 @@
 import { createRoot } from "react-dom/client";
 import { flushSync } from "react-dom";
-import type { CampaignLanguage } from "../firebase/campaigns";
-import type { Creation } from "../firebase/creations";
+import type { MessageLanguage } from "../firebase/messages";
+import type { PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
-import { CreationCanvasPreview } from "./PostManager";
+import { PageCanvasPreview } from "./PageCanvasPreview";
 import { exportCanvasPng } from "./exportCanvasPng";
 
-export async function exportInstagramImage(creation: Creation, language: CampaignLanguage, title: string, description: string, assets: GalleryAsset[]): Promise<Blob> {
+export async function exportInstagramImage(postPage: PostPage, language: MessageLanguage, title: string, description: string, assets: GalleryAsset[]): Promise<Blob> {
   const host = document.createElement("div");
   host.style.cssText = "position:fixed;left:-20000px;top:0;pointer-events:none";
   host.setAttribute("aria-hidden", "true");
@@ -16,10 +16,10 @@ export async function exportInstagramImage(creation: Creation, language: Campaig
     // Modal preparation can start in a React effect. Render the export outside
     // that commit so flushSync has actually populated the DOM before reading it.
     await new Promise<void>((resolve) => window.requestAnimationFrame(() => resolve()));
-    flushSync(() => root.render(<CreationCanvasPreview creation={creation} campaignTitle={title} campaignDescription={description} galleryAssets={assets} language={language} previewWidth={827} showPlaceholder={false} />));
+    flushSync(() => root.render(<PageCanvasPreview postPage={postPage} messageTitle={title} messageDescription={description} galleryAssets={assets} language={language} previewWidth={827} showPlaceholder={false} />));
     const canvas = host.firstElementChild as HTMLDivElement;
     canvas.style.width = "827px";
-    const png = await exportCanvasPng(canvas, creation.format, assets);
+    const png = await exportCanvasPng(canvas, postPage.format, assets);
     const bitmap = await createImageBitmap(png);
     try {
       const output = document.createElement("canvas");

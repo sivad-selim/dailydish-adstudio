@@ -1,4 +1,4 @@
-import type { AdFormat } from "../firebase/creations";
+import type { AdFormat } from "../firebase/postPages";
 
 export const FORMAT_CONFIG: Record<AdFormat, {
   label: string; dimensions: string; width: number; height: number; exportName: string; destination: string;

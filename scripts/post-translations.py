@@ -63,10 +63,10 @@ class Firestore:
             if not cursor:
                 return rows
 
-    def get(self, campaign_id):
-        if not re.fullmatch(r'[A-Za-z0-9_-]+', campaign_id):
-            raise ValueError('Identifiant de campagne invalide.')
-        return document(self.request('/campaigns/' + campaign_id))
+    def get(self, page_id):
+        if not re.fullmatch(r'[A-Za-z0-9_-]+', page_id):
+            raise ValueError('Identifiant de page invalide.')
+        return document(self.request('/post-pages/' + page_id))
 
 
 def resolve(rows, selector, label):
@@ -81,7 +81,7 @@ def resolve(rows, selector, label):
 def title(row):
     translations = row['data'].get('translations', {})
     return next((translations.get(lang, {}).get('title', '') for lang in LANGUAGES
-                 if translations.get(lang, {}).get('title', '').strip()), 'Campagne sans titre')
+                 if translations.get(lang, {}).get('title', '').strip()), 'Message sans titre')
 
 
 def language_list(value):
@@ -93,24 +93,28 @@ def language_list(value):
     return result
 
 
-def select_campaigns(campaigns, posts, pages, folders, post_folder=None, selectors=None):
-    selected = campaigns
+def select_pages(pages, posts, folders, post_folder=None, selectors=None, post_selectors=None):
+    selected_posts = posts
     if post_folder:
-        folder = resolve(folders, post_folder, lambda r: r['data'].get('name', ''))
-        page_ids = {pid for post in posts if post['data'].get('folderId') == folder['id'] for pid in post['data'].get('pageIds', [])}
-        # Follow post membership, not the potentially stale folderId on a gallery page.
-        ids = {page['data'].get('campaignId') for page in pages if page['id'] in page_ids}
-        selected = [row for row in selected if row['id'] in ids]
-        missing = page_ids - {row['id'] for row in pages}
-        if missing:
-            raise ValueError('Des pages du dossier sont introuvables : ' + ', '.join(sorted(missing)))
-        if ids - {row['id'] for row in campaigns} - {None, ''}:
-            raise ValueError('Certaines campagnes liées aux posts sont introuvables.')
+        folder = resolve(folders, post_folder, lambda row: row['data'].get('name', ''))
+        selected_posts = [row for row in selected_posts if row['data'].get('folderId') == folder['id']]
+    by_id = {row['id']: row for row in pages}
+    def post_title(post):
+        ids = post['data'].get('pageIds', [])
+        return title(by_id[ids[0]]) if ids and ids[0] in by_id else 'Post sans titre'
+    if post_selectors:
+        ids = {resolve(posts, selector, post_title)['id'] for selector in post_selectors}
+        selected_posts = [row for row in selected_posts if row['id'] in ids]
+        if ids - {row['id'] for row in selected_posts}:
+            raise ValueError('Un post sélectionné est en dehors du dossier demandé.')
+    ids = [pid for post in selected_posts for pid in post['data'].get('pageIds', [])]
+    if set(ids) - by_id.keys(): raise ValueError('Des pages du post sont introuvables.')
+    selected = [by_id[pid] for pid in ids]
     if selectors:
-        ids = {resolve(campaigns, selector, title)['id'] for selector in selectors}
-        selected = [row for row in selected if row['id'] in ids]
-        if ids - {row['id'] for row in selected}:
-            raise ValueError('Une campagne sélectionnée n’appartient pas au dossier demandé.')
+        wanted = {resolve(pages, selector, title)['id'] for selector in selectors}
+        selected = [row for row in selected if row['id'] in wanted]
+        if wanted - {row['id'] for row in selected}:
+            raise ValueError('Une page sélectionnée est en dehors des posts demandés.')
     return selected
 
 
@@ -125,12 +129,12 @@ def prepare(rows, languages, source):
         tasks.append({'id': row['id'], 'title': title(row), 'updateTime': row['updateTime'],
                       'translations': translations, 'missing': {k: v for k, v in missing.items() if v},
                       'proposed': {}, 'sourceEmpty': not any(source_text.get(f, '').strip() for f in FIELDS)})
-    return {'version': 1, 'project': PROJECT, 'database': DATABASE, 'source': source,
-            'languages': languages, 'campaigns': tasks}
+    return {'model': 'post-pages', 'project': PROJECT, 'database': DATABASE, 'source': source,
+            'languages': languages, 'pages': tasks}
 
 
 def build_writes(plan, current, overwrite=False):
-    if plan.get('version') != 1 or plan.get('project') != PROJECT or plan.get('database') != DATABASE:
+    if plan.get('model') != 'post-pages' or plan.get('project') != PROJECT or plan.get('database') != DATABASE:
         raise ValueError('Plan incompatible avec cette base.')
     languages = plan.get('languages', [])
     if not languages or any(lang not in LANGUAGES for lang in languages):
@@ -138,7 +142,7 @@ def build_writes(plan, current, overwrite=False):
     if plan.get('source') not in LANGUAGES:
         raise ValueError('Langue source invalide.')
     writes, seen = [], set()
-    for task in plan['campaigns']:
+    for task in plan['pages']:
         cid = task['id']
         if cid in seen or not re.fullmatch(r'[A-Za-z0-9_-]+', cid):
             raise ValueError('Identifiant dupliqué ou invalide.')
@@ -148,7 +152,7 @@ def build_writes(plan, current, overwrite=False):
             continue
         row = current[cid]
         if not task.get('updateTime') or row['updateTime'] != task['updateTime']:
-            raise ValueError(f'Campagne {cid} modifiée depuis sa lecture. Refaire prepare.')
+            raise ValueError(f'Page {cid} modifiée depuis sa lecture. Refaire prepare.')
         if row['data'].get('translations', {}) != task['translations']:
             raise ValueError('Le texte de référence a été modifié dans le plan.')
         translated, paths = {}, []
@@ -169,13 +173,13 @@ def build_writes(plan, current, overwrite=False):
             if values:
                 translated[lang] = {'mapValue': {'fields': values}}
         if paths:
-            writes.append({'update': {'name': ROOT + '/campaigns/' + cid,
+            writes.append({'update': {'name': ROOT + '/post-pages/' + cid,
                           'fields': {'translations': {'mapValue': {'fields': translated}}}},
                           'updateMask': {'fieldPaths': paths},
                           'currentDocument': {'updateTime': task['updateTime']},
                           'updateTransforms': [{'fieldPath': 'updatedAt', 'setToServerValue': 'REQUEST_TIME'}]})
     if len(writes) > 450:
-        raise ValueError('Plus de 450 campagnes : préparer plusieurs lots explicites.')
+        raise ValueError('Plus de 450 messages : préparer plusieurs lots explicites.')
     return writes
 
 
@@ -191,11 +195,12 @@ def save_private(path, value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest='command', required=True)
-    commands.add_parser('list', help='Lister les dossiers de posts et les campagnes (lecture seule).')
+    commands.add_parser('list', help='Lister les dossiers de posts et les messages (lecture seule).')
     prep = commands.add_parser('prepare', help='Exporter les textes à traduire, sans modifier Firestore.')
     prep.add_argument('--post-folder', help='Nom exact ou ID du dossier dans Posts.')
-    prep.add_argument('--campaign', action='append', help='ID ou titre exact, répétable.')
-    prep.add_argument('--all', action='store_true', help='Toutes les campagnes, explicitement.')
+    prep.add_argument('--post', action='append', help='ID ou titre du post, répétable.')
+    prep.add_argument('--page', action='append', help='ID ou titre exact, répétable.')
+    prep.add_argument('--all', action='store_true', help='Tous les messages, explicitement.')
     prep.add_argument('--languages', default='all')
     prep.add_argument('--source', default='fr')
     prep.add_argument('--out', required=True)
@@ -207,33 +212,32 @@ def main():
     client = Firestore()
     if args.command == 'apply':
         plan = json.loads(Path(args.file).read_text())
-        rows = {task['id']: client.get(task['id']) for task in plan['campaigns'] if task.get('proposed')}
+        rows = {task['id']: client.get(task['id']) for task in plan['pages'] if task.get('proposed')}
         writes = build_writes(plan, rows, args.overwrite)
         if args.write and writes:
             backup = Path(__file__).resolve().parents[1] / 'work' / 'translation-audit' / (datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '.json')
             save_private(backup, {'before': rows, 'writes': writes, 'status': 'prepared'})
             result = client.request(':commit', {'writes': writes})
             save_private(backup, {'before': rows, 'writes': writes, 'status': 'committed', 'commitTime': result.get('commitTime')})
-        print(json.dumps({'mode': 'written' if args.write else 'dry-run', 'campaignCount': len(writes),
+        print(json.dumps({'mode': 'written' if args.write else 'dry-run', 'pageCount': len(writes),
                           'fields': [{'id': w['update']['name'].rsplit('/', 1)[-1], 'paths': w['updateMask']['fieldPaths']} for w in writes]}, ensure_ascii=False, indent=2))
         return
-    campaigns = client.list('campaigns')
-    folders = client.list('creation-folders')
+    pages = client.list('post-pages')
+    posts = client.list('posts')
+    folders = client.list('post-folders')
     if args.command == 'list':
-        print(json.dumps({'postFolders': [{'id': r['id'], 'name': r['data'].get('name', '')} for r in folders],
-                          'campaigns': [{'id': r['id'], 'title': title(r)} for r in campaigns]}, ensure_ascii=False, indent=2))
+        print(json.dumps({'postFolders': [{'id': row['id'], 'name': row['data'].get('name', '')} for row in folders],
+                          'posts': [{'id': row['id'], 'folderId': row['data'].get('folderId', ''), 'pageIds': row['data'].get('pageIds', [])} for row in posts],
+                          'pages': [{'id': row['id'], 'postId': row['data']['postId'], 'title': title(row)} for row in pages]}, ensure_ascii=False, indent=2))
         return
-    if not args.all and not args.post_folder and not args.campaign:
-        raise ValueError('Préciser --post-folder, --campaign ou --all.')
+    if not args.all and not args.post_folder and not args.page and not args.post:
+        raise ValueError('Préciser --post-folder, --post, --page ou --all.')
     source = language_list(args.source)
-    if len(source) != 1:
-        raise ValueError('Une seule langue source est nécessaire.')
-    posts = client.list('posts') if args.post_folder else []
-    pages = client.list('creations') if args.post_folder else []
-    rows = select_campaigns(campaigns, posts, pages, folders, args.post_folder, args.campaign)
+    if len(source) != 1: raise ValueError('Une seule langue source est nécessaire.')
+    rows = select_pages(pages, posts, folders, args.post_folder, args.page, args.post)
     plan = prepare(rows, language_list(args.languages), source[0])
     save_private(args.out, plan)
-    print(json.dumps({'file': args.out, 'campaignCount': len(rows), 'withMissingFields': sum(bool(t['missing']) for t in plan['campaigns'])}))
+    print(json.dumps({'file': args.out, 'pageCount': len(rows), 'withMissingFields': sum(bool(t['missing']) for t in plan['pages'])}))
 
 
 if __name__ == '__main__':

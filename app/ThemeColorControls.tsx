@@ -1,5 +1,5 @@
 import { Fragment } from "react";
-import type { TextColorTone } from "../firebase/creations";
+import type { TextColorTone } from "../firebase/postPages";
 
 export type ThemeColorTarget = {
   id: string;

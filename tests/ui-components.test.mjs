@@ -12,7 +12,7 @@ before(async () => {
   ({ PageHeader } = await server.ssrLoadModule('/app/components/PageHeader.tsx'));
 });
 after(async () => { await server?.close(); });
-const base = { campaigns: [], galleryAssets: [], gallery: true, publications: [], status: 'ready' };
+const base = { galleryAssets: [], gallery: true, publications: [], status: 'ready' };
 const render = (props) => renderToStaticMarkup(createElement(PostPreview, { ...base, ...props }));
 
 test('selector card can be wrapped by a button without nested controls', () => {

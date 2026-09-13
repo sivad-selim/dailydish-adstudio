@@ -2,7 +2,7 @@
 
 ## Utilisation
 
-Dans Calendrier, ouvrir une entrée. La fenêtre affiche la date prévue, les variantes EN/FR/BR et une légende modifiable par langue. Les trois destinations sont cochées initialement. Les cases se trouvent sous le bouton Publier. Les textes sont ceux de la campagne liée à la création : EN → en, FR → fr, BR → pt. Aucun fallback vers une autre langue ; titre, description et légende peuvent être vides.
+Dans Calendrier, ouvrir une entrée. La fenêtre affiche la date prévue, les variantes EN/FR/BR et une légende modifiable par langue. Les trois destinations sont cochées initialement. Les cases se trouvent sous le bouton Publier. Les textes sont ceux de le message liée à la création : EN → en, FR → fr, BR → pt. Aucun fallback vers une autre langue ; titre, description et légende peuvent être vides.
 
 Cette version publie uniquement les posts contenant une image. Les galeries de plusieurs pages restent planifiables mais leur publication est désactivée. L’export utilise le rendu existant sans le placeholder « Votre titre », puis un JPEG 1080 × 1350. Les formats plus hauts sont contenus dans ce cadre avec des marges crème : aucun recadrage. L’aperçu est le JPEG exact envoyé. La date du calendrier ne déclenche pas d’envoi automatique.
 

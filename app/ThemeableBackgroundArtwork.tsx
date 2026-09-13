@@ -1,5 +1,5 @@
 import { useId } from "react";
-import type { AdBackground } from "../firebase/creations";
+import type { AdBackground } from "../firebase/postPages";
 
 export function ThemeableBackgroundArtwork({
   background,

@@ -3,8 +3,7 @@ import { Icon } from "./components/Icon";
 import { Button } from "./components/Button";
 
 import { useEffect, useRef, useState } from "react";
-import type { Campaign } from "../firebase/campaigns";
-import type { Creation } from "../firebase/creations";
+import type { PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
 import type { StudioPost } from "../firebase/posts";
 import type { PlannedPublication } from "../firebase/publicationPlan";
@@ -18,21 +17,21 @@ import "./instagramPublication.css";
 
 type Preview = { url: string; blob?: Blob };
 type Props = {
-  entry: PlannedPublication; post?: StudioPost; creations: Creation[]; campaigns: Campaign[]; assets: GalleryAsset[];
+  entry: PlannedPublication; post?: StudioPost; postPages: PostPage[];  assets: GalleryAsset[];
   disabled: boolean; error: string;
   remove: () => void; close: () => void;
 };
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : "L’envoi n’a pas pu être terminé. Réessaie.";
 
-export function InstagramPublicationEditor({ entry, post, creations, campaigns, assets, disabled, error, remove, close }: Props) {
-  const creation = creations.find((item) => item.id === post?.pageIds[0]);
-  const campaign = campaigns.find((item) => item.id === creation?.campaignId);
-  const pages = (post?.pageIds ?? []).map((id) => creations.find((item) => item.id === id));
+export function InstagramPublicationEditor({ entry, post, postPages, assets, disabled, error, remove, close }: Props) {
+  const postPage = postPages.find((item) => item.id === post?.pageIds[0]);
+  const message = postPage;
+  const pages = (post?.pageIds ?? []).map((id) => postPages.find((item) => item.id === id));
   const valid = pages.length > 0 && pages.length <= 10 && pages.every(Boolean);
   const [resetTarget, setResetTarget] = useState<InstagramPublication | null>(null);
   const [resetError, setResetError] = useState("");
   const [selected, setSelected] = useState<InstagramAccount[]>(["en", "fr", "br"]);
-  const [captions, setCaptions] = useState<Record<InstagramAccount, string>>(() => Object.fromEntries(PUBLICATION_ACCOUNTS.map(({id, language}) => [id, publicationTranslation(campaign, language).caption])) as Record<InstagramAccount, string>);
+  const [captions, setCaptions] = useState<Record<InstagramAccount, string>>(() => Object.fromEntries(PUBLICATION_ACCOUNTS.map(({id, language}) => [id, publicationTranslation(message, language).caption])) as Record<InstagramAccount, string>);
   const [previews, setPreviews] = useState<Partial<Record<InstagramAccount, Preview[]>>>({});
   const [sequence, setSequence] = useState({index: 0, total: 0});
   const [progress, setProgress] = useState<Partial<Record<InstagramAccount, string>>>({});
@@ -73,7 +72,7 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
             if (!active) break;
             setProgress((old) => ({...old, [id]: `Préparation : ${index + 1} sur ${total}`}));
             const page = pages[index];
-            const translation = publicationTranslation(campaigns.find((item) => item.id === page?.campaignId), language);
+            const translation = publicationTranslation(page, language);
             const blob = paths ? undefined : await exportInstagramImage(page!, language, translation.title, translation.description, assets);
             const url = paths ? await instagramImageUrl(paths[index]) : URL.createObjectURL(blob!);
             if (blob) urls.push(url);
@@ -104,7 +103,7 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
         for (let index = 0; index < pages.length; index++) {
           if (mounted.current) setProgress((old) => ({...old, [account]: `Étape 1 sur 4 · Génération des images : ${index + 1} sur ${pages.length}`}));
           const page = pages[index]!;
-          const translation = publicationTranslation(campaigns.find((item) => item.id === page.campaignId), language);
+          const translation = publicationTranslation(page, language);
           images.push(index === 0 && previews[account]?.[0]?.blob ? previews[account]![0].blob! : await exportInstagramImage(page, language, translation.title, translation.description, assets));
         }
         for (let index = 0; index < images.length; index++) {
@@ -136,9 +135,9 @@ export function InstagramPublicationEditor({ entry, post, creations, campaigns, 
   const ready = valid && initial !== null && !historyError && remaining.length > 0 && remaining.every((id) => Boolean(previews[id]) && [...captions[id]].length <= 2200);
   const publishedCount = Object.values(jobs).filter((job) => job?.status === "published").length;
   return <div className="instagram-publication-editor" aria-busy={busy}>
-    <header><div><h3>{recap ? "Résultat de la publication" : "Préparer la publication"}</h3><p>{creation?.name || "Publication"}</p></div><button type="button" disabled={busy} aria-label="Fermer la publication" onClick={close}><Icon name="close" /></button></header>
+    <header><div><h3>{recap ? "Résultat de la publication" : "Préparer la publication"}</h3><p>{postPage?.name || "Publication"}</p></div><button type="button" disabled={busy} aria-label="Fermer la publication" onClick={close}><Icon name="close" /></button></header>
     {recap ? <>
-      {busy && running && <p className="instagram-sequence" role="status">{creation?.name || "Publication"} · Compte {sequence.index} sur {sequence.total} · {PUBLICATION_ACCOUNTS.find(({id}) => id === running)?.label}</p>}
+      {busy && running && <p className="instagram-sequence" role="status">{postPage?.name || "Publication"} · Compte {sequence.index} sur {sequence.total} · {PUBLICATION_ACCOUNTS.find(({id}) => id === running)?.label}</p>}
       <div className="instagram-results" role="status" aria-live="polite">{PUBLICATION_ACCOUNTS.filter(({id}) => targets.includes(id)).map(({id, label, username}) => {
         const result = jobs[id];
         const success = result?.status === "published";

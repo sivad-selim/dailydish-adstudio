@@ -1,7 +1,6 @@
 "use client";
 import { Button } from "./components/Button";
-import { CreationCanvasPreview } from "./CreationCanvasPreview";
-export { CreationCanvasPreview } from "./CreationCanvasPreview";
+import { PageCanvasPreview } from "./PageCanvasPreview";
 import { PostPreview } from "./components/PostPreview";
 import { PageHeader, Icon } from "./components";
 import { SectionHeading } from "./SectionHeading";
@@ -18,9 +17,9 @@ import {
   useRef,
   useState,
 } from "react";
-import { CAMPAIGN_LANGUAGES, type Campaign } from "../firebase/campaigns";
-import type { CreationFolder } from "../firebase/creationFolders";
-import { type Creation } from "../firebase/creations";
+import { MESSAGE_LANGUAGES } from "../firebase/messages";
+import type { PostFolder } from "../firebase/postFolders";
+import { type PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
 import type { StudioPost, StudioPostType } from "../firebase/posts";
 import { useInstagramHistory } from "./InstagramPublicationStatus";
@@ -36,15 +35,15 @@ export type PostListViewState = { expandedPostId: string; collapsedFolderKeys: s
 type PostManagerProps = {
   viewStateRef: RefObject<PostListViewState>;
   posts: StudioPost[];
-  creations: Creation[];
-  folders: CreationFolder[];
-  campaigns: Campaign[];
+  postPages: PostPage[];
+  folders: PostFolder[];
+
   galleryAssets: GalleryAsset[];
   loading: boolean;
   errorMessage: string;
   onCreatePost: (folderId: string, type: StudioPostType) => Promise<string>;
   onAddPage: (post: StudioPost) => Promise<void>;
-  onOpenPage: (creationId: string) => void;
+  onOpenPage: (postPageId: string) => void;
   onEditPost: (post: StudioPost) => void;
   onDuplicatePost: (post: StudioPost) => Promise<void>;
   onDeletePost: (post: StudioPost) => Promise<void>;
@@ -52,25 +51,23 @@ type PostManagerProps = {
   onTransferPage: (sourcePostId: string, pageId: string, targetPostId: string | null, folderId: string, beforePageId?: string) => Promise<void>;
   onReorderPages: (post: StudioPost, pageIds: string[]) => Promise<void>;
   onCreateFolder: (name: string) => Promise<void>;
-  onDuplicateFolder: (folder: CreationFolder) => Promise<void>;
-  onDeleteFolder: (folder: CreationFolder) => Promise<void>;
+  onDuplicateFolder: (folder: PostFolder) => Promise<void>;
+  onDeleteFolder: (folder: PostFolder) => Promise<void>;
   onMovePost: (post: StudioPost, folderId: string) => Promise<void>;
-  onRenameFolder: (folder: CreationFolder, name: string) => Promise<void>;
+  onRenameFolder: (folder: PostFolder, name: string) => Promise<void>;
 };
 
 
 
-const getCampaignContent = (
-  creation: Creation | undefined,
-  campaigns: Campaign[],
+const getMessageContent = (
+  postPage: PostPage | undefined,
+
 ) => {
-  const campaign = campaigns.find(
-    (candidate) => candidate.id === creation?.campaignId,
-  );
-  const language = CAMPAIGN_LANGUAGES.find(({ id }) =>
-    campaign?.translations[id].title.trim() || campaign?.translations[id].description.trim(),
+  const message = postPage;
+  const language = MESSAGE_LANGUAGES.find(({ id }) =>
+    message?.translations[id].title.trim() || message?.translations[id].description.trim(),
   )?.id ?? "fr";
-  const translation = campaign?.translations[language];
+  const translation = message?.translations[language];
   return {
     language,
     title: translation?.title.trim() ?? "",
@@ -81,9 +78,8 @@ const getCampaignContent = (
 export function PostManager({
   viewStateRef,
   posts,
-  creations,
+  postPages,
   folders,
-  campaigns,
   galleryAssets,
   loading,
   errorMessage,
@@ -144,18 +140,17 @@ export function PostManager({
     document.body.appendChild(host);
     const root = createRoot(host);
     try {
-      const entries = getFolderPngEntries(folderPosts, creations);
+      const entries = getFolderPngEntries(folderPosts, postPages);
       setFolderExport({ key, done: 0, total: entries.length });
       const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       for (const [index, entry] of entries.entries()) {
-        const translation = campaigns.find((campaign) => campaign.id === entry.creation.campaignId)
-          ?.translations[entry.language];
+        const translation = entry.postPage.translations[entry.language];
         flushSync(() => root.render(
-          <CreationCanvasPreview
-            creation={entry.creation}
-            campaignTitle={translation?.title.trim() ?? ""}
-            campaignDescription={translation?.description.trim() ?? ""}
+          <PageCanvasPreview
+            postPage={entry.postPage}
+            messageTitle={translation?.title.trim() ?? ""}
+            messageDescription={translation?.description.trim() ?? ""}
             galleryAssets={galleryAssets}
             language={entry.language}
             previewWidth={827}
@@ -164,7 +159,7 @@ export function PostManager({
         const canvas = host.firstElementChild as HTMLDivElement;
         // Preserve the editor's layout width even on narrow mobile viewports.
         canvas.style.width = "827px";
-        const png = await exportCanvasPng(canvas, entry.creation.format, galleryAssets);
+        const png = await exportCanvasPng(canvas, entry.postPage.format, galleryAssets);
         zip.file(entry.filename, await png.arrayBuffer());
         setFolderExport({ key, done: index + 1, total: entries.length });
       }
@@ -254,8 +249,8 @@ export function PostManager({
 
   const pagesForPost = (post: StudioPost) =>
     post.pageIds
-      .map((pageId) => creations.find((creation) => creation.id === pageId))
-      .filter((page): page is Creation => Boolean(page));
+      .map((pageId) => postPages.find((postPage) => postPage.id === pageId))
+      .filter((page): page is PostPage => Boolean(page));
 
   const createPost = async (type: StudioPostType) => {
     if (postTypeFolderId === null || creatingPost) return;
@@ -287,7 +282,7 @@ export function PostManager({
     }
   };
 
-  const duplicateFolder = async (folder: CreationFolder) => {
+  const duplicateFolder = async (folder: PostFolder) => {
     if (duplicatingFolderRef.current) return;
     duplicatingFolderRef.current = true;
     setDuplicatingFolderId(folder.id);
@@ -302,7 +297,7 @@ export function PostManager({
     }
   };
 
-  const renameFolder = async (folder: CreationFolder) => {
+  const renameFolder = async (folder: PostFolder) => {
     if (renamingFolderId) return;
     const name = window.prompt("Nouveau nom du dossier", folder.name);
     if (!name?.trim() || name.trim() === folder.name) return;
@@ -317,7 +312,7 @@ export function PostManager({
     }
   };
 
-  const removeFolder = async (folder: CreationFolder) => {
+  const removeFolder = async (folder: PostFolder) => {
     const confirmed = window.confirm(
       `Supprimer le dossier « ${folder.name} » ? Ses posts seront déplacés dans « Sans dossier ».`,
     );
@@ -554,7 +549,7 @@ export function PostManager({
     const isGallery = post.type === "gallery";
     return (
       <article
-        className={`creation-card post-card ${draggedPostId === post.id ? "dragging" : ""}${postDropClass(post.id)}`}
+        className={`post-card ${draggedPostId === post.id ? "dragging" : ""}${postDropClass(post.id)}`}
         {...postDropProps(post)}
         draggable={!savingPostOrder}
         key={post.id}
@@ -572,13 +567,13 @@ export function PostManager({
         }}
       >
         {isGallery && galleryDropZone(post)}
-        <PostPreview creation={firstPage} campaigns={campaigns} galleryAssets={galleryAssets} gallery={isGallery}
+        <PostPreview postPage={firstPage} galleryAssets={galleryAssets} gallery={isGallery}
           publications={instagramHistory.items.filter((item) => item.postId === post.id)} status={instagramHistory.status}
           onOpen={() => { if (firstPage) { if (isGallery) onEditPost(post); else onOpenPage(firstPage.id); } }}
           onToggleGallery={isGallery ? () => setExpandedPostId((current) => current === post.id ? "" : post.id) : undefined}
           expanded={expandedPostId === post.id} actions={<>
             <button
-              className="creation-duplicate-button"
+              className="post-duplicate-button"
               type="button"
               aria-label={duplicatingPostId === post.id ? "Duplication en cours" : "Dupliquer le post"}
               title="Dupliquer le post"
@@ -588,7 +583,7 @@ export function PostManager({
               <Icon name="content_copy" />
             </button>
             <button
-              className="creation-delete-button"
+              className="post-delete-button"
               type="button"
               disabled={deletingPostId === post.id}
               onClick={() => void removePost(post)}
@@ -603,7 +598,7 @@ export function PostManager({
 
   const renderExpandedGallery = (post: StudioPost) => {
     const pages = pagesForPost(post);
-    const firstContent = getCampaignContent(pages[0], campaigns);
+    const firstContent = getMessageContent(pages[0]);
     return (
       <article className={`gallery-post-expanded${postDropClass(post.id)}`} key={post.id} {...postDropProps(post, true)}>
         <header
@@ -624,13 +619,13 @@ export function PostManager({
             <Icon name="collections" />
             <div>
               <small>Post galerie · {pages.length} page{pages.length === 1 ? "" : "s"}</small>
-              <h3>{firstContent.title || "Galerie sans campagne"}</h3>
+              <h3>{firstContent.title || "Galerie sans message"}</h3>
             </div>
           </div>
           <div className="gallery-post-expanded-actions">
             <button
               type="button"
-              className="campaign-primary-button"
+              className="post-action-primary"
               disabled={addingPagePostId === post.id}
               onClick={() => void addPage(post)}
             >
@@ -662,7 +657,7 @@ export function PostManager({
             <p>Cette galerie ne contient encore aucune page.</p>
             <button
               type="button"
-              className="campaign-primary-button"
+              className="post-action-primary"
               onClick={() => void addPage(post)}
             >
               <Icon name="add" /> Ajouter une page
@@ -678,7 +673,7 @@ export function PostManager({
             }}
           >
             {pages.map((page, index) => {
-              const content = getCampaignContent(page, campaigns);
+              const content = getMessageContent(page);
               return (
                 <article
                   className={`gallery-page-row ${draggedPageId === page.id ? "dragging" : ""} ${dragOverPageId === page.id ? "drag-over" : ""}`}
@@ -733,14 +728,14 @@ export function PostManager({
                   </div>
                   <button
                     type="button"
-                    className="creation-preview gallery-page-preview"
+                    className="page-preview gallery-page-preview"
                     onClick={() => onOpenPage(page.id)}
                     aria-label={`Modifier la page ${index + 1}`}
                   >
-                    <CreationCanvasPreview
-                      creation={page}
-                      campaignTitle={content.title}
-                      campaignDescription={content.description}
+                    <PageCanvasPreview
+                      postPage={page}
+                      messageTitle={content.title}
+                      messageDescription={content.description}
                 language={content.language}
                       galleryAssets={galleryAssets}
                     />
@@ -756,16 +751,16 @@ export function PostManager({
 
   return (
     <section
-      className="creation-page"
+      className="post-page"
       aria-label="Mes posts"
       onDragOver={(event) => {
         if (draggedPostId || draggedPageId) updateAutoScroll(event.clientY);
       }}
     >
       <PageHeader title="Posts" description="Crée et organise tes images et tes galeries.">
-        <div className="creation-page-header-actions">
+        <div className="post-page-header-actions">
           <Button variant="secondary"
-            className="campaign-secondary-button"
+            className="post-action-secondary"
             type="button"
             disabled={isCreatingFolder}
             onClick={() => void createFolder()}
@@ -776,7 +771,7 @@ export function PostManager({
       </PageHeader>
 
       {(errorMessage || localError) && (
-        <p className="campaign-system-error" role="alert">{localError || errorMessage}</p>
+        <p className="post-system-error" role="alert">{localError || errorMessage}</p>
       )}
 
       {savingPostOrder && <p role="status">Enregistrement du déplacement…</p>}
@@ -790,21 +785,21 @@ export function PostManager({
       )}
 
       {loading ? (
-        <div className="creation-empty-state">Chargement des posts…</div>
+        <div className="post-empty-state">Chargement des posts…</div>
       ) : posts.length === 0 && folders.length === 0 ? (
-        <div className="creation-empty-state">
-          <div className="creation-empty-symbol"><Icon name="folder" /></div>
+        <div className="post-empty-state">
+          <div className="post-empty-symbol"><Icon name="folder" /></div>
           <h3>Créez votre premier dossier</h3>
           <p>Les nouveaux posts sont toujours créés à l’intérieur d’un dossier.</p>
         </div>
       ) : (
-        <div className="creation-grid post-grid">
+        <div className="post-grid">
           {folderGroups.map((group) => {
             const dropKey = group.id || UNFILED_DROP_KEY;
             const isCollapsed = collapsedFolderKeys.has(dropKey);
             return (
               <section
-                className={`creation-folder-section ${dragOverFolderKey === dropKey ? "drag-over" : ""}`}
+                className={`post-folder-section ${dragOverFolderKey === dropKey ? "drag-over" : ""}`}
                 key={dropKey}
                 onDragOver={(event) => {
                   if ((!draggedPostId && !draggedPageId) || savingPostOrderRef.current) return;
@@ -831,14 +826,14 @@ export function PostManager({
                   );
                 }}
               >
-                <SectionHeading as="header" className="creation-folder-header">
-                  <div className="creation-folder-title">
+                <SectionHeading as="header" className="post-folder-header">
+                  <div className="post-folder-title">
                     <Icon name="folder" />
                     <h3>{group.name}</h3>
                   </div>
-                  <div className="creation-folder-actions">
+                  <div className="post-folder-actions">
                     <button
-                      className="creation-folder-add-button"
+                      className="post-folder-add-button"
                       type="button"
                       disabled={folderExport !== null || group.posts.length === 0}
                       onClick={() => void exportFolder(dropKey, group.name, group.posts)}
@@ -852,14 +847,14 @@ export function PostManager({
                     {group.folder && (
                       <>
                         <button
-                          className="creation-folder-add-button"
+                          className="post-folder-add-button"
                           type="button"
                           onClick={() => setPostTypeFolderId(group.id)}
                         >
                           <Icon name="add" /> Nouveau post
                         </button>
                         <button
-                          className="creation-folder-edit-button"
+                          className="post-folder-edit-button"
                           type="button"
                           aria-busy={duplicatingFolderId === group.id}
                           disabled={Boolean(duplicatingFolderId)}
@@ -870,7 +865,7 @@ export function PostManager({
                           <Icon name="content_copy" />
                         </button>
                         <button
-                          className="creation-folder-edit-button"
+                          className="post-folder-edit-button"
                           type="button"
                           disabled={renamingFolderId === group.folder.id}
                           onClick={() => void renameFolder(group.folder)}
@@ -880,7 +875,7 @@ export function PostManager({
                           <Icon name="edit" />
                         </button>
                         <button
-                          className="creation-folder-delete-button"
+                          className="post-folder-delete-button"
                           type="button"
                           disabled={deletingFolderId === group.folder.id}
                           onClick={() => void removeFolder(group.folder)}
@@ -892,7 +887,7 @@ export function PostManager({
                       </>
                     )}
                     <button
-                      className="creation-folder-toggle"
+                      className="post-folder-toggle"
                       type="button"
                       aria-expanded={!isCollapsed}
                       onClick={() => toggleFolder(dropKey)}
@@ -907,7 +902,7 @@ export function PostManager({
                   <div className="post-transfer-zone">Déposer ici pour créer un post simple dans {group.name}</div>
                 )}
                 {!isCollapsed && group.posts.length === 0 && (
-                  <div className="creation-folder-empty">Glissez un post ici</div>
+                  <div className="post-folder-empty">Glissez un post ici</div>
                 )}
 
                 {!isCollapsed &&

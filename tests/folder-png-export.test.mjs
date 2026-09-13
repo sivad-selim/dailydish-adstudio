@@ -13,14 +13,14 @@ vm.runInNewContext(source, { exports });
 const { getFolderPngEntries } = exports;
 
 test("folder ZIP includes every language and numbers posts from the bottom while preserving gallery page order", async () => {
-  const creations = [{ id: "a" }, { id: "b" }, { id: "c" }];
+  const postPages = [{ id: "a" }, { id: "b" }, { id: "c" }];
   const entries = getFolderPngEntries([
     { id: "single", type: "single", pageIds: ["b"] },
     { id: "gallery", type: "gallery", pageIds: ["c", "a"] },
-  ], creations);
+  ], postPages);
   assert.equal(entries.length, 9);
   const zip = new JSZip();
-  for (const entry of entries) zip.file(entry.filename, `${entry.creation.id}:${entry.language}`);
+  for (const entry of entries) zip.file(entry.filename, `${entry.postPage.id}:${entry.language}`);
   const archive = await JSZip.loadAsync(await zip.generateAsync({ type: "uint8array", compression: "STORE" }));
   for (const language of ["fr", "en", "pt"]) {
     const prefix = language;
@@ -43,7 +43,7 @@ test("manual display order is numbered in reverse without mutating it", () => {
     { id: "bottom", type: "single", pageIds: ["b"] },
   ];
   const entries = getFolderPngEntries(posts, [{ id: "a" }, { id: "b" }, { id: "c" }]);
-  assert.deepEqual(Array.from(entries.filter((entry) => entry.language === "fr"), (entry) => [entry.filename, entry.creation.id]), [
+  assert.deepEqual(Array.from(entries.filter((entry) => entry.language === "fr"), (entry) => [entry.filename, entry.postPage.id]), [
     ["fr_post_1.png", "b"], ["fr_post_2.png", "a"], ["fr_post_3.png", "c"],
   ]);
   assert.deepEqual(posts.map((post) => post.id), ["top", "middle", "bottom"]);

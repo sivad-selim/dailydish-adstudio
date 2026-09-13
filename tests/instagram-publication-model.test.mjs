@@ -11,10 +11,10 @@ test('BR uses Portuguese and English targets the international account', () => {
   assert.equal(PUBLICATION_ACCOUNTS.find(item => item.id === 'en').username, 'mydailydishapp');
 });
 test('missing translations stay empty, never fall back to another language', () => {
-  const campaign = {translations: {fr: {title: 'Bonjour', description: ''}, en: {title: '', description: 'English only'}}};
-  assert.equal(publicationTranslation(campaign, 'pt').caption, '');
-  assert.equal(publicationTranslation(campaign, 'en').title, '');
-  assert.equal(publicationTranslation(campaign, 'en').caption, 'English only');
-  assert.equal(publicationTranslation(campaign, 'fr').caption, 'Bonjour');
+  const message = {translations: {fr: {title: 'Bonjour', description: ''}, en: {title: '', description: 'English only'}}};
+  assert.equal(publicationTranslation(message, 'pt').caption, '');
+  assert.equal(publicationTranslation(message, 'en').title, '');
+  assert.equal(publicationTranslation(message, 'en').caption, 'English only');
+  assert.equal(publicationTranslation(message, 'fr').caption, 'Bonjour');
   assert.equal(publicationTranslation(undefined, 'fr').caption, '');
 });

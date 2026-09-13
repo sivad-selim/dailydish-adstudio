@@ -11,7 +11,7 @@
     "build:firebase": "vite build --config vite.firebase.config.ts",
     "typecheck:firebase": "tsc --project tsconfig.firebase.json",
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
-    "test": "npm run build && node --test tests/rendered-html.test.mjs",
+    "test": "npm run typecheck:firebase && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

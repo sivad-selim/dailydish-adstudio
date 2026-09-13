@@ -2,7 +2,7 @@ import { toBlob } from "html-to-image";
 import { FORMAT_CONFIG } from "./adFormats";
 import { toOpaquePng } from "./opaquePng";
 import { getGalleryAssetDataUrl, type GalleryAsset } from "../firebase/gallery";
-import type { AdFormat } from "../firebase/creations";
+import type { AdFormat } from "../firebase/postPages";
 
 const withTimeout = <Value,>(promise: Promise<Value>, milliseconds: number) =>
   new Promise<Value>((resolve, reject) => {

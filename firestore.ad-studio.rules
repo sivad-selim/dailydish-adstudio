@@ -8,23 +8,29 @@ service cloud.firestore {
         && request.auth.token.email == 'mydailydishapp@gmail.com';
     }
 
-    match /campaigns/{campaignId} {
-      allow read, create, update, delete: if isDailyDishOwner();
+    function validTranslation(value) {
+      return value is map && value.keys().hasOnly(['title', 'description'])
+        && value.title is string && value.description is string;
     }
-
-    match /creations/{creationId} {
-      allow read, create, update, delete: if isDailyDishOwner();
+    match /post-pages/{pageId} {
+      allow read: if isDailyDishOwner();
+      allow create, update: if isDailyDishOwner()
+        && request.resource.data.keys().hasOnly(['postId', 'name', 'translations', 'format', 'theme', 'background', 'backgroundAssetId', 'properties', 'ownerEmail', 'createdAt', 'updatedAt'])
+        && request.resource.data.postId is string
+        && request.resource.data.translations.keys().hasOnly(['en', 'fr', 'pt'])
+        && validTranslation(request.resource.data.translations.en)
+        && validTranslation(request.resource.data.translations.fr)
+        && validTranslation(request.resource.data.translations.pt)
+        && pageId in getAfter(/databases/$(database)/documents/posts/$(request.resource.data.postId)).data.pageIds;
+      allow delete: if isDailyDishOwner()
+        && (!existsAfter(/databases/$(database)/documents/posts/$(resource.data.postId))
+          || !(pageId in getAfter(/databases/$(database)/documents/posts/$(resource.data.postId)).data.pageIds));
     }
-
-    match /creation-folders/{folderId} {
+    match /post-folders/{folderId} {
       allow read, create, update, delete: if isDailyDishOwner();
     }
 
     match /gallery-folders/{folderId} {
-      allow read, create, update, delete: if isDailyDishOwner();
-    }
-
-    match /campaign-folders/{folderId} {
       allow read, create, update, delete: if isDailyDishOwner();
     }
 
@@ -33,7 +39,14 @@ service cloud.firestore {
     }
 
     match /posts/{postId} {
-      allow read, create, update, delete: if isDailyDishOwner();
+      allow read, delete: if isDailyDishOwner();
+      allow create, update: if isDailyDishOwner()
+        && request.resource.data.keys().hasOnly(['folderId', 'pageIds', 'ownerEmail', 'createdAt', 'updatedAt'])
+        && request.resource.data.folderId is string
+        && request.resource.data.pageIds is list
+        && request.resource.data.pageIds.size() >= 1
+        && request.resource.data.pageIds.size() <= 10
+        && request.resource.data.pageIds.toSet().size() == request.resource.data.pageIds.size();
     }
 
     match /instagram-publications/{publicationId} {

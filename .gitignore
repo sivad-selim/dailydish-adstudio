@@ -46,3 +46,7 @@ firebase-debug.log*
 firestore-debug.log*
 ui-debug.log*
 *.tsbuildinfo
+
+# Python helper caches
+__pycache__/
+*.pyc

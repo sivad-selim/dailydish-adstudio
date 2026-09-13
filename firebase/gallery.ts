@@ -133,7 +133,7 @@ export async function uploadGalleryFiles(files: File[], folderId = ""): Promise<
 }
 
 export async function moveGalleryAsset(asset: GalleryAsset, folderId: string): Promise<void> {
-  // Keep the object path and download URL stable for existing creations.
+  // Keep the object path and download URL stable for existing post pages.
   await updateMetadata(ref(galleryStorage, asset.path), {
     customMetadata: { folderId },
   });

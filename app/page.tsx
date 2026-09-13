@@ -1,7 +1,7 @@
 "use client";
 import { Icon } from "./components";
 import { FormatChangeDialog } from "./components/FormatChangeDialog";
-import { CampaignPicker } from "./CampaignPicker";
+import { PostPagesPanel, type MessageEditorHandle } from "./PostPagesPanel";
 import { InstagramPhonePreview, PREVIEW_PHONES, type PreviewPhone } from "./components/InstagramPhonePreview";
 
 import { exportCanvasPng } from "./exportCanvasPng";
@@ -13,33 +13,32 @@ import {
   PointerEvent as ReactPointerEvent,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
 import {
-  CAMPAIGN_LANGUAGES,
-  createCampaign,
-  deleteCampaign,
-  moveCampaign,
-  saveCampaign,
-  subscribeToCampaigns,
-  type Campaign,
-  type CampaignLanguage,
-} from "../firebase/campaigns";
+  MESSAGE_LANGUAGES,
+  type MessageLanguage,
+  type MessageTranslations,
+} from "../firebase/messages";
 import {
-  createCreationFolder,
-  deleteCreationFolder,
-  renameCreationFolder,
+  createPostFolder,
+  deletePostFolder,
+  renamePostFolder,
   saveFolderPostOrder,
-  subscribeToCreationFolders,
-  type CreationFolder,
-} from "../firebase/creationFolders";
+  subscribeToPostFolders,
+  type PostFolder,
+} from "../firebase/postFolders";
 import {
   createStudioPost,
   deleteStudioPost,
-  ensureLegacySinglePost,
-  insertDuplicatedPostPage,
-  saveStudioPost,
+  moveStudioPost,
+  swapPageMessages,
+  addPostPage,
+  removePostPage,
+  reorderPostPages,
+  duplicateStudioPost,
   transferPostPage,
   subscribeToPosts,
   type StudioPost,
@@ -52,32 +51,29 @@ import {
   uploadGalleryFiles,
   type GalleryAsset,
 } from "../firebase/gallery";
-import { CampaignManager } from "./CampaignManager";
 import {
   BACKGROUND_POSITION_Y_MAX,
   BACKGROUND_POSITION_Y_MIN,
 } from "./backgroundPosition";
 import {
-  createCreationImage,
+  createPageImage,
   setImageMultilingual,
   setImageForeground,
-  createDefaultCreationProperties,
-  createCreation,
-  deleteCreation,
-  duplicateCreation,
-  saveCreation,
-  subscribeToCreations,
+  createDefaultPageLayout,
+  savePostPage,
+  subscribeToPostPages,
   type AdBackground,
   type AdFormat,
   type AdTheme,
-  type Creation,
-  type CreationImage,
-  type CreationProperties,
+  type PostPage,
+  type PageImage,
+  type PageLayout,
   type TextBackdrop,
   type TextColorTone,
   type TextPosition,
-} from "../firebase/creations";
-import { CreationCanvasPreview, PostManager, type PostListViewState } from "./PostManager";
+} from "../firebase/postPages";
+import { PostManager, type PostListViewState } from "./PostManager";
+import { PageCanvasPreview } from "./PageCanvasPreview";
 import { StudioSettings } from "./StudioSettings";
 import { PublicationCalendar } from "./PublicationCalendar";
 import { SectionHeading } from "./SectionHeading";
@@ -107,10 +103,7 @@ import {
   type ThemeOption,
 } from "./themePalettes";
 
-const DEFAULT_TITLE = "Créez vos recettes à partir de quelques mots";
-const DEFAULT_DESCRIPTION =
-  "Transformez une idée, un texte, une photo ou un lien en recette complète.";
-type AppView = "creations" | "studio" | "campaigns" | "gallery" | "calendar" | "settings";
+type AppView = "posts" | "studio" | "gallery" | "calendar" | "settings";
 const PREVIEW_WIDTH_AT_100 = 827;
 const PREVIEW_ZOOM_MIN = 25;
 const PREVIEW_ZOOM_MAX = 150;
@@ -239,50 +232,46 @@ type HomeProps = {
 };
 
 export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
-  const [appView, setAppView] = useState<AppView>("creations");
+  const [appView, setAppView] = useState<AppView>("posts");
   const postsScrollRef = useRef<number | null>(null);
   const postsViewStateRef = useRef<PostListViewState>({ expandedPostId: "", collapsedFolderKeys: [] });
-  const [creations, setCreations] = useState<Creation[]>([]);
-  const [creationsLoading, setCreationsLoading] = useState(true);
-  const [creationError, setCreationError] = useState("");
-  const [creationFolders, setCreationFolders] = useState<CreationFolder[]>([]);
-  const [creationFoldersLoading, setCreationFoldersLoading] = useState(true);
-  const [creationFolderError, setCreationFolderError] = useState("");
+  const [postPages, setPostPages] = useState<PostPage[]>([]);
+  const [postPagesLoading, setPostPagesLoading] = useState(true);
+  const [postPageError, setPostPageError] = useState("");
+  const [postFolders, setPostFolders] = useState<PostFolder[]>([]);
+  const [postFoldersLoading, setPostFoldersLoading] = useState(true);
+  const [postFolderError, setPostFolderError] = useState("");
   const [posts, setPosts] = useState<StudioPost[]>([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postError, setPostError] = useState("");
   const [duplicatingEditorPage, setDuplicatingEditorPage] = useState(false);
   const duplicatingEditorPageRef = useRef(false);
-  const [selectedCreationId, setSelectedCreationId] = useState("");
+  const [selectedPostPageId, setSelectedPostPageId] = useState("");
   const [editingPostId, setEditingPostId] = useState("");
   const [addingEditorPage, setAddingEditorPage] = useState(false);
-  const [selectedCreationName, setSelectedCreationName] = useState("");
+  const [selectedPostPageName, setSelectedPostPageName] = useState("");
   const [draggedEditorPageId, setDraggedEditorPageId] = useState("");
   const [dragOverEditorPageId, setDragOverEditorPageId] = useState("");
-  const [creationSaveStatus, setCreationSaveStatus] = useState<
+  const [postPageSaveStatus, setPostPageSaveStatus] = useState<
     "idle" | "saving" | "saved" | "error"
   >("idle");
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [campaignsLoading, setCampaignsLoading] = useState(true);
-  const [campaignError, setCampaignError] = useState("");
+  const messageEditorRef = useRef<MessageEditorHandle>(null);
+  const [messagePreview, setMessagePreview] = useState<{id: string; translations: MessageTranslations} | null>(null);
   const [galleryAssets, setGalleryAssets] = useState<GalleryAsset[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(true);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [galleryError, setGalleryError] = useState("");
-  const [selectedCampaignId, setSelectedCampaignId] = useState("");
-  const [selectedCampaignEditorId, setSelectedCampaignEditorId] = useState("");
-  const [campaignLanguage, setCampaignLanguage] =
-    useState<CampaignLanguage>("fr");
-  const [title, setTitle] = useState(DEFAULT_TITLE);
-  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
+  const [messageLanguage, setMessageLanguage] =
+    useState<MessageLanguage>("fr");
+
   const [showInstagramGuides, setShowInstagramGuides] = useState(true);
   const [previewPhone, setPreviewPhone] = useState<PreviewPhone>("pixel-10-pro-xl");
   const [showInstagramAdButton, setShowInstagramAdButton] = useState(true);
   const [format, setFormat] = useState<AdFormat>("portrait");
   const [pendingFormat, setPendingFormat] = useState<AdFormat | null>(null);
-  useEffect(() => { setPendingFormat(null); }, [selectedCreationId]);
-  const [properties, setProperties] = useState<CreationProperties>(
-    createDefaultCreationProperties,
+  useEffect(() => { setPendingFormat(null); }, [selectedPostPageId]);
+  const [properties, setProperties] = useState<PageLayout>(
+    createDefaultPageLayout,
   );
   const [theme, setTheme] = useState<AdTheme>("dailydish");
   const [background, setBackground] = useState<AdBackground>("cream");
@@ -306,11 +295,10 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     x: number;
     y: number;
   } | null>(null);
-  const hydratedCreationIdRef = useRef("");
-  const currentEditorDraftRef = useRef<Creation | null>(null);
+  const hydratedPostPageIdRef = useRef("");
+  const currentEditorDraftRef = useRef<PostPage | null>(null);
   const editorDragPointerYRef = useRef<number | null>(null);
   const editorAutoScrollFrameRef = useRef<number | null>(null);
-  const migratingLegacyCreationIdsRef = useRef<Set<string>>(new Set());
   const {
     backgroundColors,
     backgroundPositionY,
@@ -325,21 +313,22 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     textBackdrop,
     images,
   } = properties;
-  const selectedCreation =
-    creations.find((creation) => creation.id === selectedCreationId) ?? null;
+  const selectedPostPage =
+    postPages.find((postPage) => postPage.id === selectedPostPageId) ?? null;
   const editingPost =
     posts.find(
-      (post) => post.id === editingPostId && post.type === "gallery",
+      (post) => post.id === (editingPostId || selectedPostPage?.postId),
     ) ?? null;
   const editingPostPages = editingPost
     ? editingPost.pageIds
         .map((pageId) =>
-          creations.find((creation) => creation.id === pageId),
+          postPages.find((postPage) => postPage.id === pageId),
         )
-        .filter((creation): creation is Creation => Boolean(creation))
+        .filter((postPage): postPage is PostPage => Boolean(postPage))
     : [];
-  const selectedCampaign =
-    campaigns.find((campaign) => campaign.id === selectedCampaignId) ?? null;
+  const selectedTranslations = messagePreview && messagePreview.id === selectedPostPage?.id ? messagePreview.translations : selectedPostPage?.translations;
+  const title = selectedTranslations?.[messageLanguage].title ?? "";
+  const description = selectedTranslations?.[messageLanguage].description ?? "";
   const imageGalleryAssets = galleryAssets;
   const backgroundGalleryAssets = galleryAssets;
   const selectedBackgroundAsset =
@@ -425,102 +414,70 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     },
   ];
 
-  const updateCreationProperties = (
-    updater: (current: CreationProperties) => CreationProperties,
+  const updatePageLayout = (
+    updater: (current: PageLayout) => PageLayout,
   ) => setProperties(updater);
 
   useEffect(() => {
     if (!accountEmail) return;
 
     try {
-      return subscribeToCreations(
-        (nextCreations) => {
+      return subscribeToPostPages(
+        (nextPostPages) => {
           const editorDraft = currentEditorDraftRef.current;
-          setCreations(
+          setPostPages(
             editorDraft
-              ? nextCreations.map((creation) =>
-                  creation.id === editorDraft.id
-                    ? { ...editorDraft, updatedAt: creation.updatedAt }
-                    : creation,
+              ? nextPostPages.map((postPage) =>
+                  postPage.id === editorDraft.id
+                    ? { ...editorDraft, translations: postPage.translations, postId: postPage.postId, updatedAt: postPage.updatedAt }
+                    : postPage,
                 )
-              : nextCreations,
+              : nextPostPages,
           );
-          setCreationError("");
-          setCreationsLoading(false);
+          setPostPageError("");
+          setPostPagesLoading(false);
         },
         () => {
-          setCreationError(
+          setPostPageError(
             "Les créations ne peuvent pas être synchronisées pour le moment.",
           );
-          setCreationsLoading(false);
+          setPostPagesLoading(false);
         },
       );
     } catch {
-      setCreationError(
+      setPostPageError(
         "Les créations ne peuvent pas être synchronisées pour le moment.",
       );
-      setCreationsLoading(false);
+      setPostPagesLoading(false);
     }
   }, [accountEmail]);
 
+
   useEffect(() => {
     if (!accountEmail) {
-      setCampaignsLoading(false);
+      setPostFoldersLoading(false);
       return;
     }
 
     try {
-      return subscribeToCampaigns(
-        (nextCampaigns) => {
-          setCampaigns(nextCampaigns);
-          setSelectedCampaignEditorId((currentId) =>
-            nextCampaigns.some((campaign) => campaign.id === currentId)
-              ? currentId
-              : nextCampaigns[0]?.id ?? "",
-          );
-          setCampaignError("");
-          setCampaignsLoading(false);
-        },
-        () => {
-          setCampaignError(
-            "Les campagnes ne peuvent pas être synchronisées pour le moment.",
-          );
-          setCampaignsLoading(false);
-        },
-      );
-    } catch {
-      setCampaignError(
-        "Les campagnes ne peuvent pas être synchronisées pour le moment.",
-      );
-      setCampaignsLoading(false);
-    }
-  }, [accountEmail]);
-
-  useEffect(() => {
-    if (!accountEmail) {
-      setCreationFoldersLoading(false);
-      return;
-    }
-
-    try {
-      return subscribeToCreationFolders(
+      return subscribeToPostFolders(
         (nextFolders) => {
-          setCreationFolders(nextFolders);
-          setCreationFolderError("");
-          setCreationFoldersLoading(false);
+          setPostFolders(nextFolders);
+          setPostFolderError("");
+          setPostFoldersLoading(false);
         },
         () => {
-          setCreationFolderError(
+          setPostFolderError(
             "Les dossiers ne peuvent pas être synchronisés pour le moment.",
           );
-          setCreationFoldersLoading(false);
+          setPostFoldersLoading(false);
         },
       );
     } catch {
-      setCreationFolderError(
+      setPostFolderError(
         "Les dossiers ne peuvent pas être synchronisés pour le moment.",
       );
-      setCreationFoldersLoading(false);
+      setPostFoldersLoading(false);
     }
   }, [accountEmail]);
 
@@ -548,31 +505,6 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     }
   }, [accountEmail]);
 
-  useEffect(() => {
-    if (creationsLoading || postsLoading) return;
-    const referencedPageIds = new Set(posts.flatMap((post) => post.pageIds));
-    const legacyCreations = creations.filter(
-      (creation) =>
-        !creation.postId &&
-        !referencedPageIds.has(creation.id) &&
-        !migratingLegacyCreationIdsRef.current.has(creation.id),
-    );
-    if (legacyCreations.length === 0) return;
-
-    legacyCreations.forEach((creation) =>
-      migratingLegacyCreationIdsRef.current.add(creation.id),
-    );
-    void Promise.all(
-      legacyCreations.map((creation) =>
-        ensureLegacySinglePost(creation.id, creation.folderId),
-      ),
-    ).catch(() => {
-      legacyCreations.forEach((creation) =>
-        migratingLegacyCreationIdsRef.current.delete(creation.id),
-      );
-      setPostError("Les anciennes créations n’ont pas pu être converties en posts.");
-    });
-  }, [creations, creationsLoading, posts, postsLoading]);
 
   useEffect(() => {
     if (!accountEmail) {
@@ -603,76 +535,61 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     };
   }, [accountEmail]);
 
-  useEffect(() => {
-    if (selectedCampaign) {
-      const translation = selectedCampaign.translations[campaignLanguage];
-      setTitle(translation.title);
-      setDescription(translation.description);
-    } else if (!campaignsLoading) {
-      setTitle("");
-      setDescription("");
-    }
-  }, [campaignLanguage, campaignsLoading, selectedCampaign]);
 
   useEffect(() => {
     if (
       appView !== "studio" ||
-      !selectedCreation ||
-      hydratedCreationIdRef.current === selectedCreation.id
+      !selectedPostPage ||
+      hydratedPostPageIdRef.current === selectedPostPage.id
     ) {
       return;
     }
 
     setReady(false);
-    setSelectedCreationName(selectedCreation.name);
-    setSelectedCampaignId(selectedCreation.campaignId);
-    setFormat(selectedCreation.format);
-    setTheme(selectedCreation.theme);
-    setBackground(selectedCreation.background);
+    setSelectedPostPageName(selectedPostPage.name);
+    setFormat(selectedPostPage.format);
+    setTheme(selectedPostPage.theme);
+    setBackground(selectedPostPage.background);
     setSelectedBackgroundColorTarget(
-      getInitialBackgroundColorTarget(selectedCreation.background),
+      getInitialBackgroundColorTarget(selectedPostPage.background),
     );
-    setBackgroundAssetId(selectedCreation.backgroundAssetId);
+    setBackgroundAssetId(selectedPostPage.backgroundAssetId);
     setProperties({
-      ...selectedCreation.properties,
-      images: selectedCreation.properties.images.map((image) => ({ ...image })),
+      ...selectedPostPage.properties,
+      images: selectedPostPage.properties.images.map((image) => ({ ...image })),
     });
-    hydratedCreationIdRef.current = selectedCreation.id;
-    setCreationSaveStatus("saved");
+    hydratedPostPageIdRef.current = selectedPostPage.id;
+    setPostPageSaveStatus("saved");
     setReady(true);
-  }, [appView, selectedCreation]);
+  }, [appView, selectedPostPage]);
 
   useEffect(() => {
     if (
       !ready ||
-      !selectedCreationId ||
-      hydratedCreationIdRef.current !== selectedCreationId
+      !selectedPostPageId ||
+      hydratedPostPageIdRef.current !== selectedPostPageId
     ) {
       return;
     }
 
-    setCreationSaveStatus("saving");
+    setPostPageSaveStatus("saving");
     const saveTimer = window.setTimeout(() => {
-      void saveCreation({
-        id: selectedCreationId,
-        name: selectedCreationName,
-        postId: selectedCreation?.postId ?? "",
-        folderId: selectedCreation?.folderId ?? "",
-        campaignId: selectedCampaignId,
+      void savePostPage({
+        id: selectedPostPageId,
+        name: selectedPostPageName,
         format,
         theme,
         background,
         backgroundAssetId,
         properties,
-        updatedAt: 0,
       })
         .then(() => {
-          setCreationSaveStatus("saved");
-          setCreationError("");
+          setPostPageSaveStatus("saved");
+          setPostPageError("");
         })
         .catch(() => {
-          setCreationSaveStatus("error");
-          setCreationError("La création n’a pas pu être enregistrée.");
+          setPostPageSaveStatus("error");
+          setPostPageError("La page n’a pas pu être enregistrée.");
         });
     }, 600);
 
@@ -683,11 +600,8 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     format,
     properties,
     ready,
-    selectedCampaignId,
-    selectedCreationId,
-    selectedCreationName,
-    selectedCreation?.postId,
-    selectedCreation?.folderId,
+    selectedPostPageId,
+    selectedPostPageName,
     theme,
   ]);
 
@@ -703,7 +617,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
 
   const startDraggingImage = (
     event: ReactPointerEvent<HTMLDivElement>,
-    image: CreationImage,
+    image: PageImage,
   ) => {
     event.preventDefault();
     event.stopPropagation();
@@ -729,7 +643,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     const y =
       drag.y + ((event.clientY - drag.startY) / bounds.width) * 100;
 
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       images: current.images.map((image) =>
         image.id === drag.imageId
@@ -747,11 +661,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     imageDragRef.current = null;
   };
 
-  const updateCreationProperty = <Key extends keyof CreationProperties,>(
+  const updatePostPageProperty = <Key extends keyof PageLayout,>(
     property: Key,
-    value: CreationProperties[Key],
+    value: PageLayout[Key],
   ) => {
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       [property]: value,
     }));
@@ -767,7 +681,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
       getInitialBackgroundColorTarget(background),
     );
     setSelectedTextColorTarget("title");
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       backgroundColors: nextBackgroundColors,
       assistantBackgroundColor: nextBackgroundColors.base,
@@ -788,11 +702,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
 
   const selectBackgroundColor = (target: string, color: string) => {
     if (target === "assistant-background") {
-      updateCreationProperty("assistantBackgroundColor", color);
+      updatePostPageProperty("assistantBackgroundColor", color);
       return;
     }
 
-    updateCreationProperty("backgroundColors", {
+    updatePostPageProperty("backgroundColors", {
       base: target === "base" ? color : activeBackgroundColors.base,
       shapes: activeBackgroundColors.shapes.map((shapeColor, index) =>
         target === `shape-${index}` ? color : shapeColor,
@@ -801,7 +715,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const selectTextColor = (target: string, color: string) => {
-    updateCreationProperty("textColors", {
+    updatePostPageProperty("textColors", {
       title:
         target === "title"
           ? { ...activeTextColors.title, color }
@@ -818,7 +732,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const selectTextTone = (target: string, tone: TextColorTone) => {
-    updateCreationProperty("textColors", {
+    updatePostPageProperty("textColors", {
       title:
         target === "title"
           ? { ...activeTextColors.title, tone }
@@ -835,11 +749,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const addImage = () => {
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       images: [
         ...current.images,
-        createCreationImage(crypto.randomUUID(), {
+        createPageImage(crypto.randomUUID(), {
           x: Math.min(current.images.length * 8, 40),
           y: Math.min(current.images.length * 8, 40),
         }),
@@ -849,9 +763,9 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
 
   const updateImage = (
     imageId: string,
-    updater: (image: CreationImage) => CreationImage,
+    updater: (image: PageImage) => PageImage,
   ) => {
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       images: current.images.map((image) =>
         image.id === imageId ? updater(image) : image,
@@ -860,41 +774,10 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const removeImage = (imageId: string) => {
-    updateCreationProperties((current) => ({
+    updatePageLayout((current) => ({
       ...current,
       images: current.images.filter((image) => image.id !== imageId),
     }));
-  };
-
-  const handleCreateCampaign = async (folderId = "") => {
-    setCampaignError("");
-    const campaignId = await createCampaign(folderId);
-    setSelectedCampaignEditorId(campaignId);
-  };
-
-  const handleSaveCampaign = async (campaign: Campaign) => {
-    setCampaignError("");
-    await saveCampaign(campaign);
-    setCampaigns((current) =>
-      current.map((currentCampaign) =>
-        currentCampaign.id === campaign.id
-          ? { ...currentCampaign, translations: campaign.translations }
-          : currentCampaign,
-      ),
-    );
-  };
-
-  const handleDeleteCampaign = async (campaignId: string) => {
-    setCampaignError("");
-    try {
-      await deleteCampaign(campaignId);
-      if (selectedCampaignEditorId === campaignId) {
-        setSelectedCampaignEditorId("");
-      }
-    } catch (error) {
-      setCampaignError("La campagne n’a pas pu être supprimée.");
-      throw error;
-    }
   };
 
   const handleUploadGalleryFiles = async (files: File[], folderId = "") => {
@@ -940,60 +823,60 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   useLayoutEffect(() => {
-    if (appView !== "creations" || creationsLoading || campaignsLoading || creationFoldersLoading || postsLoading || postsScrollRef.current === null) return;
+    if (appView !== "posts" || postPagesLoading || postFoldersLoading || postsLoading || postsScrollRef.current === null) return;
     window.scrollTo({ top: postsScrollRef.current, behavior: "instant" });
     postsScrollRef.current = null;
-  }, [appView, creationsLoading, campaignsLoading, creationFoldersLoading, postsLoading]);
+  }, [appView, postPagesLoading, postFoldersLoading, postsLoading]);
 
-  const openCreation = (creationId: string, postId = "") => {
-    if (appView === "creations") postsScrollRef.current = window.scrollY;
+  const openPostPage = (postPageId: string, postId = "") => {
+    if (appView === "posts") postsScrollRef.current = window.scrollY;
     setReady(false);
-    hydratedCreationIdRef.current = "";
-    setEditingPostId(postId);
-    setSelectedCreationId(creationId);
+    hydratedPostPageIdRef.current = "";
+    setEditingPostId(postId || postPages.find((page) => page.id === postPageId)?.postId || "");
+    setSelectedPostPageId(postPageId);
     setAppView("studio");
   };
 
-  currentEditorDraftRef.current =
-    appView === "studio" && ready && selectedCreation
+  const editorDraft = useMemo(() =>
+    appView === "studio" && ready && selectedPostPage
       ? {
-          id: selectedCreation.id,
-          name: selectedCreationName,
-          postId: selectedCreation.postId,
-          folderId: selectedCreation.folderId,
-          campaignId: selectedCampaignId,
+          id: selectedPostPage.id,
+          name: selectedPostPageName,
+          postId: selectedPostPage.postId,
+          translations: selectedPostPage.translations,
           format,
           theme,
           background,
           backgroundAssetId,
           properties,
-          updatedAt: selectedCreation.updatedAt,
+          updatedAt: selectedPostPage.updatedAt,
         }
-      : null;
+      : null, [appView, ready, selectedPostPage, selectedPostPageName, format, theme, background, backgroundAssetId, properties]);
+  useLayoutEffect(() => { currentEditorDraftRef.current = editorDraft; }, [editorDraft]);
 
   useEffect(() => {
     const editorDraft = currentEditorDraftRef.current;
     if (!editorDraft) return;
 
-    setCreations((currentCreations) => {
-      const currentCreation = currentCreations.find(
-        (creation) => creation.id === editorDraft.id,
+    setPostPages((currentPostPages) => {
+      const currentPostPage = currentPostPages.find(
+        (postPage) => postPage.id === editorDraft.id,
       );
       if (
-        !currentCreation ||
-        (currentCreation.name === editorDraft.name &&
-          currentCreation.campaignId === editorDraft.campaignId &&
-          currentCreation.format === editorDraft.format &&
-          currentCreation.theme === editorDraft.theme &&
-          currentCreation.background === editorDraft.background &&
-          currentCreation.backgroundAssetId === editorDraft.backgroundAssetId &&
-          currentCreation.properties === editorDraft.properties)
+        !currentPostPage ||
+        (currentPostPage.name === editorDraft.name &&
+
+          currentPostPage.format === editorDraft.format &&
+          currentPostPage.theme === editorDraft.theme &&
+          currentPostPage.background === editorDraft.background &&
+          currentPostPage.backgroundAssetId === editorDraft.backgroundAssetId &&
+          currentPostPage.properties === editorDraft.properties)
       ) {
-        return currentCreations;
+        return currentPostPages;
       }
 
-      return currentCreations.map((creation) =>
-        creation.id === editorDraft.id ? editorDraft : creation,
+      return currentPostPages.map((postPage) =>
+        postPage.id === editorDraft.id ? editorDraft : postPage,
       );
     });
   }, [
@@ -1003,47 +886,44 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     format,
     properties,
     ready,
-    selectedCampaignId,
-    selectedCreationId,
-    selectedCreationName,
+    selectedPostPageId,
+    selectedPostPageName,
     theme,
   ]);
 
-  const activateGalleryPage = (creationId: string) => {
-    if (creationId === selectedCreationId) return;
-    const creation = creations.find((candidate) => candidate.id === creationId);
-    if (!creation) return;
+  const activateGalleryPage = async (postPageId: string) => {
+    try { await messageEditorRef.current?.flush(); } catch { return; }
+    setMessagePreview(null);
+    if (postPageId === selectedPostPageId) return;
+    const postPage = postPages.find((candidate) => candidate.id === postPageId);
+    if (!postPage) return;
 
     const outgoingDraft = currentEditorDraftRef.current;
     if (outgoingDraft) {
-      void saveCreation(outgoingDraft).catch(() => {
-        setCreationSaveStatus("error");
-        setCreationError("La création n’a pas pu être enregistrée.");
-      });
+      try {
+        await savePostPage(outgoingDraft);
+      } catch {
+        setPostPageSaveStatus("error");
+        setPostPageError("La page n’a pas pu être enregistrée. Réessaie avant de changer de page.");
+        return;
+      }
     }
 
-    const campaign = campaigns.find(
-      (candidate) => candidate.id === creation.campaignId,
-    );
-    const translation = campaign?.translations[campaignLanguage];
-    hydratedCreationIdRef.current = creation.id;
-    setSelectedCreationId(creation.id);
-    setSelectedCreationName(creation.name);
-    setSelectedCampaignId(creation.campaignId);
-    setTitle(translation?.title ?? "");
-    setDescription(translation?.description ?? "");
-    setFormat(creation.format);
-    setTheme(creation.theme);
-    setBackground(creation.background);
+    hydratedPostPageIdRef.current = postPage.id;
+    setSelectedPostPageId(postPage.id);
+    setSelectedPostPageName(postPage.name);
+    setFormat(postPage.format);
+    setTheme(postPage.theme);
+    setBackground(postPage.background);
     setSelectedBackgroundColorTarget(
-      getInitialBackgroundColorTarget(creation.background),
+      getInitialBackgroundColorTarget(postPage.background),
     );
-    setBackgroundAssetId(creation.backgroundAssetId);
+    setBackgroundAssetId(postPage.backgroundAssetId);
     setProperties({
-      ...creation.properties,
-      images: creation.properties.images.map((image) => ({ ...image })),
+      ...postPage.properties,
+      images: postPage.properties.images.map((image) => ({ ...image })),
     });
-    setCreationSaveStatus("saved");
+    setPostPageSaveStatus("saved");
     setReady(true);
   };
 
@@ -1115,40 +995,40 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     [],
   );
 
-  const handleCreateCreationFolder = async (name: string) => {
-    setCreationFolderError("");
+  const handleCreatePostFolder = async (name: string) => {
+    setPostFolderError("");
     try {
-      await createCreationFolder(name);
+      await createPostFolder(name);
     } catch (error) {
-      setCreationFolderError("Le dossier n’a pas pu être créé.");
+      setPostFolderError("Le dossier n’a pas pu être créé.");
       throw error;
     }
   };
 
-  const handleDeleteCreationFolder = async (folder: CreationFolder) => {
-    setCreationFolderError("");
+  const handleDeletePostFolder = async (folder: PostFolder) => {
+    setPostFolderError("");
     try {
       await Promise.all(
         posts
           .filter((post) => post.folderId === folder.id)
-          .map((post) => saveStudioPost({ ...post, folderId: "" })),
+          .map((post) => moveStudioPost(post.id, "")),
       );
-      await deleteCreationFolder(folder.id);
+      await deletePostFolder(folder.id);
     } catch (error) {
-      setCreationFolderError("Le dossier n’a pas pu être supprimé.");
+      setPostFolderError("Le dossier n’a pas pu être supprimé.");
       throw error;
     }
   };
 
-  const handleRenameCreationFolder = async (
-    folder: CreationFolder,
+  const handleRenamePostFolder = async (
+    folder: PostFolder,
     name: string,
   ) => {
-    setCreationFolderError("");
+    setPostFolderError("");
     try {
-      await renameCreationFolder(folder.id, name);
+      await renamePostFolder(folder.id, name);
     } catch (error) {
-      setCreationFolderError("Le dossier n’a pas pu être renommé.");
+      setPostFolderError("Le dossier n’a pas pu être renommé.");
       throw error;
     }
   };
@@ -1158,38 +1038,20 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     type: StudioPostType,
   ): Promise<string> => {
     setPostError("");
-    const post = await createStudioPost(folderId, type);
-    let pageId = "";
-    try {
-      pageId = await createCreation("Nouvelle page", "", folderId, post.id);
-      await saveStudioPost({ ...post, pageIds: [pageId] });
-      if (type === "single") openCreation(pageId);
-      return post.id;
-    } catch (error) {
-      if (pageId) await deleteCreation(pageId).catch(() => undefined);
-      await deleteStudioPost(post.id).catch(() => undefined);
-      setPostError("Le post n’a pas pu être créé.");
-      throw error;
-    }
+    const post = await createStudioPost(folderId, type === "gallery" ? 2 : 1);
+    openPostPage(post.pageIds[0], post.id);
+    return post.id;
   };
 
   const handleAddPostPage = async (post: StudioPost) => {
-    setPostError("");
-    let pageId = "";
-    try {
-      pageId = await createCreation("Nouvelle page", "", post.folderId, post.id);
-      await saveStudioPost({ ...post, pageIds: [...post.pageIds, pageId] });
-    } catch (error) {
-      if (pageId) await deleteCreation(pageId).catch(() => undefined);
-      setPostError("La page n’a pas pu être ajoutée.");
-      throw error;
-    }
+    await messageEditorRef.current?.flush();
+    await addPostPage(post.id);
   };
 
   const handleMovePost = async (post: StudioPost, folderId: string) => {
     setPostError("");
     try {
-      await saveStudioPost({ ...post, folderId });
+      await moveStudioPost(post.id, folderId);
     } catch (error) {
       setPostError("Le post n’a pas pu être déplacé.");
       throw error;
@@ -1202,7 +1064,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   ) => {
     setPostError("");
     try {
-      await saveStudioPost({ ...post, pageIds });
+      await reorderPostPages(post.id, pageIds);
     } catch (error) {
       setPostError("L’ordre des pages n’a pas pu être enregistré.");
       throw error;
@@ -1211,15 +1073,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
 
   const handleDeletePostPage = async (
     post: StudioPost,
-    page: Creation,
+    page: PostPage,
   ) => {
     setPostError("");
     try {
-      await deleteCreation(page);
-      await saveStudioPost({
-        ...post,
-        pageIds: post.pageIds.filter((pageId) => pageId !== page.id),
-      });
+      await removePostPage(post.id, page.id);
     } catch (error) {
       setPostError("La page n’a pas pu être supprimée.");
       throw error;
@@ -1246,22 +1104,17 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     await handleReorderPostPages(editingPost, pageIds);
   };
 
-  const duplicateGalleryEditorPage = async (page: Creation) => {
+  const duplicateGalleryEditorPage = async (page: PostPage) => {
     if (!editingPost || duplicatingEditorPageRef.current) return;
     duplicatingEditorPageRef.current = true;
     setDuplicatingEditorPage(true);
     setPostError("");
-    let copyId = "";
     try {
       const draft = currentEditorDraftRef.current;
       const source = draft?.id === page.id ? draft : page;
-      copyId = await duplicateCreation(source, {
-        postId: editingPost.id,
-        folderId: editingPost.folderId,
-      });
-      await insertDuplicatedPostPage(editingPost.id, page.id, copyId);
+      await messageEditorRef.current?.flush();
+      await addPostPage(editingPost.id, page.id, source);
     } catch {
-      if (copyId) await deleteCreation(copyId).catch(() => undefined);
       setPostError("La page n’a pas pu être dupliquée.");
     } finally {
       duplicatingEditorPageRef.current = false;
@@ -1269,12 +1122,13 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     }
   };
 
-  const deleteGalleryEditorPage = async (page: Creation) => {
+  const deleteGalleryEditorPage = async (page: PostPage) => {
     if (!editingPost) return;
-    const confirmed = window.confirm("Supprimer cette page de la galerie ?");
+    await messageEditorRef.current?.flush();
+    const confirmed = window.confirm("Supprimer cette page et son message ?");
     if (!confirmed) return;
 
-    if (page.id === selectedCreationId) {
+    if (page.id === selectedPostPageId) {
       const currentIndex = editingPostPages.findIndex(
         (candidate) => candidate.id === page.id,
       );
@@ -1283,11 +1137,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
         editingPostPages[currentIndex - 1] ??
         null;
       currentEditorDraftRef.current = null;
-      if (nextPage) activateGalleryPage(nextPage.id);
+      if (nextPage) await activateGalleryPage(nextPage.id);
       else {
         setEditingPostId("");
-        setSelectedCreationId("");
-        setAppView("creations");
+        setSelectedPostPageId("");
+        setAppView("posts");
       }
     }
 
@@ -1297,10 +1151,6 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   const handleDeletePost = async (post: StudioPost) => {
     setPostError("");
     try {
-      const pages = post.pageIds
-        .map((pageId) => creations.find((creation) => creation.id === pageId))
-        .filter((page): page is Creation => Boolean(page));
-      await Promise.all(pages.map((page) => deleteCreation(page)));
       await deleteStudioPost(post.id);
     } catch (error) {
       setPostError("Le post n’a pas pu être supprimé.");
@@ -1309,32 +1159,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const handleDuplicatePost = async (post: StudioPost) => {
-    setPostError("");
-    const duplicate = await createStudioPost(post.folderId, post.type);
-    const duplicatedPageIds: string[] = [];
-    try {
-      const sourcePages = post.pageIds
-        .map((pageId) => creations.find((creation) => creation.id === pageId))
-        .filter((page): page is Creation => Boolean(page));
-      for (const page of sourcePages) {
-        duplicatedPageIds.push(
-          await duplicateCreation(page, {
-            folderId: post.folderId,
-            postId: duplicate.id,
-          }),
-        );
-      }
-      await saveStudioPost({ ...duplicate, pageIds: duplicatedPageIds });
-    } catch (error) {
-      await Promise.all(
-        duplicatedPageIds.map((pageId) =>
-          deleteCreation(pageId).catch(() => undefined),
-        ),
-      );
-      await deleteStudioPost(duplicate.id).catch(() => undefined);
-      setPostError("Le post n’a pas pu être dupliqué.");
-      throw error;
-    }
+    await duplicateStudioPost(post.id);
   };
 
   const exportPng = async () => {
@@ -1368,19 +1193,19 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const renderActiveCanvas = () => {
-    const activeCreation = currentEditorDraftRef.current ?? selectedCreation;
-    if (!activeCreation) return null;
+    const activePostPage = editorDraft ?? selectedPostPage;
+    if (!activePostPage) return null;
 
     return (
       <InstagramPhonePreview enabled={showInstagramGuides} phone={previewPhone}
         previewWidth={Math.round((PREVIEW_WIDTH_AT_100 * previewZoom) / 100)}
-        imageWidth={FORMAT_CONFIG[activeCreation.format].width} imageHeight={FORMAT_CONFIG[activeCreation.format].height}
+        imageWidth={FORMAT_CONFIG[activePostPage.format].width} imageHeight={FORMAT_CONFIG[activePostPage.format].height}
         showAdButton={showInstagramAdButton}>
-      {(width) => <CreationCanvasPreview
-        creation={activeCreation}
-        campaignTitle={title}
-        campaignDescription={description.trim()}
-        language={campaignLanguage}
+      {(width) => <PageCanvasPreview
+        postPage={activePostPage}
+        messageTitle={title}
+        messageDescription={description.trim()}
+        language={messageLanguage}
         galleryAssets={imageGalleryAssets}
         interactive
         previewWidth={width}
@@ -1394,15 +1219,12 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     );
   };
 
-  const renderGalleryEditorPage = (page: Creation) => {
+  const renderGalleryEditorPage = (page: PostPage) => {
     const pageIndex = editingPostPages.findIndex(
       (candidate) => candidate.id === page.id,
     );
-    const isActive = page.id === selectedCreationId;
-    const pageCampaign = campaigns.find(
-      (campaign) => campaign.id === page.campaignId,
-    );
-    const pageTranslation = pageCampaign?.translations[campaignLanguage];
+    const isActive = page.id === selectedPostPageId;
+    const pageTranslation = page.translations[messageLanguage];
     return (
       <div
         key={page.id}
@@ -1491,11 +1313,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             previewWidth={Math.round((PREVIEW_WIDTH_AT_100 * previewZoom) / 100)}
             imageWidth={FORMAT_CONFIG[page.format].width} imageHeight={FORMAT_CONFIG[page.format].height}
             showAdButton={showInstagramAdButton}>
-            {(width) => <CreationCanvasPreview
-              creation={page}
-              campaignTitle={pageTranslation?.title ?? ""}
-              campaignDescription={pageTranslation?.description ?? ""}
-              language={campaignLanguage}
+            {(width) => <PageCanvasPreview
+              postPage={page}
+              messageTitle={pageTranslation?.title ?? ""}
+              messageDescription={pageTranslation?.description ?? ""}
+              language={messageLanguage}
               galleryAssets={backgroundGalleryAssets}
               previewWidth={width}
             />}
@@ -1505,14 +1327,18 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     );
   };
 
-  const navigateToView = (nextView: Exclude<AppView, "studio">) => {
-    if (appView === "creations" && nextView !== "creations") postsScrollRef.current = window.scrollY;
+  const navigateToView = async (nextView: Exclude<AppView, "studio">) => {
+    try { await messageEditorRef.current?.flush(); } catch { return; }
+    if (appView === "posts" && nextView !== "posts") postsScrollRef.current = window.scrollY;
     const editorDraft = currentEditorDraftRef.current;
     if (appView === "studio" && editorDraft) {
-      void saveCreation(editorDraft).catch(() => {
-        setCreationSaveStatus("error");
-        setCreationError("La création n’a pas pu être enregistrée.");
-      });
+      try {
+        await savePostPage(editorDraft);
+      } catch {
+        setPostPageSaveStatus("error");
+        setPostPageError("La page n’a pas pu être enregistrée. Réessaie avant de quitter l’éditeur.");
+        return;
+      }
     }
     setAppView(nextView);
   };
@@ -1534,20 +1360,12 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
           <button
             type="button"
             className={
-              appView === "creations" || appView === "studio" ? "selected" : ""
+              appView === "posts" || appView === "studio" ? "selected" : ""
             }
-            aria-pressed={appView === "creations" || appView === "studio"}
-            onClick={() => navigateToView("creations")}
+            aria-pressed={appView === "posts" || appView === "studio"}
+            onClick={() => navigateToView("posts")}
           >
             Posts
-          </button>
-          <button
-            type="button"
-            className={appView === "campaigns" ? "selected" : ""}
-            aria-pressed={appView === "campaigns"}
-            onClick={() => navigateToView("campaigns")}
-          >
-            Campagnes
           </button>
           <button
             type="button"
@@ -1569,16 +1387,12 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             </div>
           )}
           <span className="status-pill">
-            {appView === "settings" ? "Réglages" : appView === "calendar" ? "Planification" : appView === "creations"
-              ? creationsLoading || creationFoldersLoading || postsLoading
+            {appView === "settings" ? "Réglages" : appView === "calendar" ? "Planification" : appView === "posts"
+              ? postPagesLoading || postFoldersLoading || postsLoading
                 ? "Synchronisation…"
-                : creationError || creationFolderError || postError
+                : postPageError || postFolderError || postError
                   ? "Posts indisponibles"
                   : "Posts synchronisés"
-              : appView === "campaigns"
-              ? campaignsLoading
-                ? "Synchronisation…"
-                : "Campagnes synchronisées"
               : appView === "gallery"
                 ? galleryError
                   ? "Galerie indisponible"
@@ -1587,11 +1401,11 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                   : "Galerie synchronisée"
                 : !ready
                   ? "Ouverture…"
-                  : creationSaveStatus === "saving"
+                  : postPageSaveStatus === "saving"
                     ? "Enregistrement…"
-                    : creationSaveStatus === "error"
+                    : postPageSaveStatus === "error"
                       ? "Erreur d’enregistrement"
-                      : "Création enregistrée"}
+                      : "Page enregistrée"}
           </span>
           {appView === "studio" && ready && (
             <button
@@ -1609,53 +1423,41 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
       {appView === "settings" ? (
         <StudioSettings />
       ) : appView === "calendar" ? (
-        <PublicationCalendar posts={posts} creations={creations} folders={creationFolders} campaigns={campaigns} galleryAssets={backgroundGalleryAssets} loading={creationsLoading || postsLoading || creationFoldersLoading || campaignsLoading} />
-      ) : appView === "creations" ? (
+        <PublicationCalendar posts={posts} postPages={postPages} folders={postFolders} galleryAssets={backgroundGalleryAssets} loading={postPagesLoading || postsLoading || postFoldersLoading} />
+      ) : appView === "posts" ? (
         <PostManager
           viewStateRef={postsViewStateRef}
           posts={posts}
-          creations={creations}
-          folders={creationFolders}
-          campaigns={campaigns}
+          postPages={postPages}
+          folders={postFolders}
+
           galleryAssets={backgroundGalleryAssets}
           loading={
-            creationsLoading ||
-            campaignsLoading ||
-            creationFoldersLoading ||
+            postPagesLoading ||
+
+            postFoldersLoading ||
             postsLoading
           }
-          errorMessage={creationError || creationFolderError || postError}
+          errorMessage={postPageError || postFolderError || postError}
           onCreatePost={handleCreatePost}
           onAddPage={handleAddPostPage}
-          onCreateFolder={handleCreateCreationFolder}
-          onOpenPage={openCreation}
+          onCreateFolder={handleCreatePostFolder}
+          onOpenPage={openPostPage}
           onEditPost={(post) => {
             const firstPageId = post.pageIds.find((pageId) =>
-              creations.some((creation) => creation.id === pageId),
+              postPages.some((postPage) => postPage.id === pageId),
             );
-            if (firstPageId) openCreation(firstPageId, post.id);
+            if (firstPageId) openPostPage(firstPageId, post.id);
           }}
           onDuplicatePost={handleDuplicatePost}
           onReorderPosts={saveFolderPostOrder}
-          onDuplicateFolder={(folder) => duplicatePostFolder(folder, posts, creations)}
+          onDuplicateFolder={(folder) => duplicatePostFolder(folder, posts)}
           onDeletePost={handleDeletePost}
           onReorderPages={handleReorderPostPages}
           onTransferPage={transferPostPage}
-          onDeleteFolder={handleDeleteCreationFolder}
+          onDeleteFolder={handleDeletePostFolder}
           onMovePost={handleMovePost}
-          onRenameFolder={handleRenameCreationFolder}
-        />
-      ) : appView === "campaigns" ? (
-        <CampaignManager
-          campaigns={campaigns}
-          selectedCampaignId={selectedCampaignEditorId}
-          loading={campaignsLoading}
-          errorMessage={campaignError}
-          onSelectCampaign={setSelectedCampaignEditorId}
-          onCreateCampaign={handleCreateCampaign}
-          onSaveCampaign={handleSaveCampaign}
-          onDeleteCampaign={handleDeleteCampaign}
-          onMoveCampaign={moveCampaign}
+          onRenameFolder={handleRenamePostFolder}
         />
       ) : appView === "gallery" ? (
         <GalleryManager
@@ -1672,60 +1474,31 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             ));
           }}
         />
-      ) : selectedCreation && ready ? (
+      ) : selectedPostPage && ready ? (
         <div className="studio-workspace">
         <aside className="control-panel" aria-label="Réglages de la publicité">
-          <div className="creation-editor-context">
-            <button type="button" onClick={() => navigateToView("creations")}>
+          <div className="page-editor-context">
+            <button type="button" onClick={() => navigateToView("posts")}>
               <Icon name="chevron_left" />
               <span>Retour</span>
             </button>
           </div>
-          <section>
-            <SectionHeading>
-              <div>
-                <h2>Contenu</h2>
-              </div>
-            </SectionHeading>
-
-            {campaigns.length > 0 ? (
-              <>
-                <CampaignPicker
-                  campaigns={campaigns}
-                  value={selectedCampaignId}
-                  onChange={setSelectedCampaignId}
-                />
-
-                {selectedCampaign && (
-                  <div className="studio-language-picker" aria-label="Langue">
-                    {CAMPAIGN_LANGUAGES.map((languageOption) => (
-                      <button
-                        key={languageOption.id}
-                        type="button"
-                        className={
-                          campaignLanguage === languageOption.id
-                            ? "selected"
-                            : ""
-                        }
-                        aria-pressed={campaignLanguage === languageOption.id}
-                        onClick={() => setCampaignLanguage(languageOption.id)}
-                      >
-                        {languageOption.shortLabel}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="studio-no-campaign">
-                <strong>Aucune campagne sélectionnée</strong>
-                <p>Créez d’abord son contenu en FR, EN et PT.</p>
-                <button type="button" onClick={() => navigateToView("campaigns")}>
-                  Créer une campagne
-                </button>
-              </div>
-            )}
-          </section>
+          {(postError || postPageError) && <p className="post-system-error" role="alert">{postError || postPageError}</p>}
+          {editingPost && <PostPagesPanel
+            pages={editingPostPages} activeId={selectedPostPageId} language={messageLanguage}
+            editorRef={messageEditorRef} assets={backgroundGalleryAssets}
+            onLanguageChange={async (language) => { await messageEditorRef.current?.flush(); setMessageLanguage(language); }}
+            onSelect={async (id) => {
+              await activateGalleryPage(id);
+              document.querySelector(`[data-gallery-editor-page-id="${id}"]`)?.scrollIntoView({behavior: "smooth", block: "start"});
+            }}
+            onPreview={(translations) => setMessagePreview({id: selectedPostPageId, translations})}
+            onAdd={async () => { await messageEditorRef.current?.flush(); await handleAddPostPage(editingPost); }}
+            onReorder={(ids) => handleReorderPostPages(editingPost, ids)}
+            onDelete={deleteGalleryEditorPage}
+            onSwap={async (first, second) => { await messageEditorRef.current?.flush(); await swapPageMessages(editingPost.id, first, second); setMessagePreview(null); }}
+            onError={setPostError}
+          />}
 
           <section>
             <SectionHeading className="compact">
@@ -2038,7 +1811,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 value={backgroundPositionY}
                 disabled={!customBackgroundUrl}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "backgroundPositionY",
                     Number(event.target.value),
                   )
@@ -2081,7 +1854,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                       aria-pressed={selected}
                       title={positionOption.label}
                       onClick={() =>
-                        updateCreationProperty(
+                        updatePostPageProperty(
                           "textPosition",
                           positionOption.id,
                         )
@@ -2105,7 +1878,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 step="1"
                 value={textWidth}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "textWidth",
                     Number(event.target.value),
                   )
@@ -2129,7 +1902,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 step="1"
                 value={textMarginHorizontal}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "textMarginHorizontal",
                     Number(event.target.value),
                   )
@@ -2153,7 +1926,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 step="1"
                 value={textMarginVertical}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "textMarginVertical",
                     Number(event.target.value),
                   )
@@ -2175,7 +1948,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 step="1"
                 value={textRotation}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "textRotation",
                     Number(event.target.value),
                   )
@@ -2189,7 +1962,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 type="checkbox"
                 checked={showAssistantLabel}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "showAssistantLabel",
                     event.target.checked,
                   )
@@ -2205,7 +1978,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 id="text-backdrop"
                 value={textBackdrop}
                 onChange={(event) =>
-                  updateCreationProperty(
+                  updatePostPageProperty(
                     "textBackdrop",
                     event.target.value as TextBackdrop,
                   )
@@ -2268,15 +2041,15 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                         <input type="checkbox" checked={image.multilingual ?? false}
                           onChange={(event) => {
                             const enabled = event.target.checked;
-                            updateImage(image.id, (current) => setImageMultilingual(current, enabled, campaignLanguage));
+                            updateImage(image.id, (current) => setImageMultilingual(current, enabled, messageLanguage));
                           }}
                         />
                       </label>
                       <div className={image.multilingual ? "image-language-slots" : "image-single-slot"}>
-                        {(image.multilingual ? CAMPAIGN_LANGUAGES : [null]).map((language) => {
+                        {(image.multilingual ? MESSAGE_LANGUAGES : [null]).map((language) => {
                           const assetId = language ? image.localizedAssetIds?.[language.id] : image.assetId;
                           return (
-                            <div className={`image-language-slot ${language?.id === campaignLanguage ? "active-language" : ""}`} key={`${selectedCreation.id}-${image.id}-${language?.id ?? "shared"}`}>
+                            <div className={`image-language-slot ${language?.id === messageLanguage ? "active-language" : ""}`} key={`${selectedPostPage.id}-${image.id}-${language?.id ?? "shared"}`}>
                               <GalleryImagePicker
                                 label={language?.shortLabel ?? "Visuel"}
                                 assets={imageGalleryAssets}
@@ -2324,7 +2097,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                           checked={image.aboveText}
                           onChange={(event) => {
                             const enabled = event.target.checked;
-                            updateCreationProperties((current) => ({
+                            updatePageLayout((current) => ({
                               ...current,
                               images: setImageForeground(current.images, image.id, enabled),
                             }));
@@ -2487,7 +2260,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
         </aside>
         </div>
       ) : (
-        <div className="creation-empty-state creation-opening-state">
+        <div className="post-empty-state post-opening-state">
           Ouverture de la création…
         </div>
       )}

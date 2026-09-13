@@ -68,16 +68,25 @@ test("App Store format survives saving and reloading", async () => {
   const sdk = {
     getFirestore: () => ({}), collection: () => ({}), doc: () => ({}),
     query: () => ({}), orderBy: () => ({}), serverTimestamp: () => null,
-    setDoc: async (_, data) => { saved = data; },
+    runTransaction: async (_, operation) => operation({
+      get: async () => ({id: "page", exists: () => true, data: () => saved ?? {}}),
+      update: (_, data) => { saved = {...saved, ...data}; },
+    }),
     onSnapshot: (_, callback) => callback({ docs: [{ id: "creation", data: () => saved }] }),
   };
-  const api = await loadSource("../firebase/creations.ts", (name) => {
+  const messages = await loadSource("../firebase/messages.ts");
+  const model = await loadSource("../firebase/postPageModel.ts");
+  const positioning = await loadSource("../app/imagePositioning.ts", () => ({FORMAT_CONFIG}));
+  const api = await loadSource("../firebase/postPages.ts", (name) => {
+    if (name === "../app/imagePositioning") return positioning;
+    if (name === "./messages") return messages;
+    if (name === "./postPageModel") return model;
     if (name === "firebase/firestore") return sdk;
     if (name === "./firebaseAuth") return { firebaseApp: {}, allowedEmail: "owner", firebaseAuth: { currentUser: { email: "owner" } } };
     throw new Error(name);
   });
-  await api.saveCreation({ id: "creation", name: "Test", format: "app-store", properties: api.createDefaultCreationProperties() });
-  api.subscribeToCreations(([creation]) => assert.equal(creation.format, "app-store"), assert.fail);
+  await api.savePostPage({...api.readPostPage("page", {}), name: "Test", format: "app-store"});
+  api.subscribeToPostPages(([postPage]) => assert.equal(postPage.format, "app-store"), assert.fail);
   assert.equal(FORMAT_CONFIG.story.width, 1080);
   assert.equal(FORMAT_CONFIG.story.height, 1920);
 });

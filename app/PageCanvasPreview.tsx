@@ -1,7 +1,7 @@
 "use client";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, Ref } from "react";
-import type { CampaignLanguage } from "../firebase/campaigns";
-import { TEXT_SPACING, getImageAssetId, type Creation } from "../firebase/creations";
+import type { MessageLanguage } from "../firebase/messages";
+import { TEXT_SPACING, getImageAssetId, type PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
 import { CanvasBackgroundImage } from "./CanvasBackgroundImage";
 import { ThemeableBackgroundArtwork } from "./ThemeableBackgroundArtwork";
@@ -9,10 +9,10 @@ import { getBackgroundColorStyle, getDefaultBackgroundColors, getDefaultTextColo
 const IMAGE_BASE_WIDTH = 47;
 const BACKGROUND_PALETTE_SHAPE_COUNT = 4;
 const PHONE_FRAME_CONTROLS_MIN_SCALE = 62;
-export function CreationCanvasPreview({
-  creation,
-  campaignTitle,
-  campaignDescription,
+export function PageCanvasPreview({
+  postPage,
+  messageTitle,
+  messageDescription,
   galleryAssets,
   language = "fr",
   showPlaceholder = true,
@@ -24,57 +24,57 @@ export function CreationCanvasPreview({
   onImagePointerUp,
   onImagePointerCancel,
 }: {
-  creation: Creation;
-  campaignTitle: string;
-  campaignDescription: string;
+  postPage: PostPage;
+  messageTitle: string;
+  messageDescription: string;
   galleryAssets: GalleryAsset[];
-  language?: CampaignLanguage;
+  language?: MessageLanguage;
   showPlaceholder?: boolean;
   interactive?: boolean;
   previewWidth?: number;
   rootRef?: Ref<HTMLDivElement>;
   onImagePointerDown?: (
     event: ReactPointerEvent<HTMLDivElement>,
-    image: Creation["properties"]["images"][number],
+    image: PostPage["properties"]["images"][number],
   ) => void;
   onImagePointerMove?: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onImagePointerUp?: () => void;
   onImagePointerCancel?: () => void;
 }) {
   const backgroundAsset = galleryAssets.find(
-    (asset) => asset.id === creation.backgroundAssetId,
+    (asset) => asset.id === postPage.backgroundAssetId,
   );
   const backgroundImageUrl = backgroundAsset?.url ?? "";
   const activeBackgroundColors = resolveBackgroundColors(
-    creation.properties.backgroundColors,
+    postPage.properties.backgroundColors,
     getDefaultBackgroundColors(
-      creation.theme,
+      postPage.theme,
       BACKGROUND_PALETTE_SHAPE_COUNT,
     ),
   );
   const darkTextBackdrop =
-    creation.properties.textBackdrop === "gradient-dark" ||
-    creation.properties.textBackdrop === "band-dark" ||
+    postPage.properties.textBackdrop === "gradient-dark" ||
+    postPage.properties.textBackdrop === "band-dark" ||
     isDarkColor(activeBackgroundColors.base);
   const thumbnailTextColors = resolveTextColors(
-    creation.properties.textColors,
-    getDefaultTextColors(creation.theme, darkTextBackdrop),
+    postPage.properties.textColors,
+    getDefaultTextColors(postPage.theme, darkTextBackdrop),
   );
   const themeStyle = {
-    ...getThemeStyle(creation.theme),
+    ...getThemeStyle(postPage.theme),
     ...getBackgroundColorStyle(activeBackgroundColors),
     ...getTextColorStyle(thumbnailTextColors),
     "--theme-label-bg":
-      creation.properties.assistantBackgroundColor ||
+      postPage.properties.assistantBackgroundColor ||
       activeBackgroundColors.base,
   };
   const [textVerticalPosition, textHorizontalPosition] =
-    creation.properties.textPosition.split("-");
+    postPage.properties.textPosition.split("-");
 
   return (
     <div
       ref={rootRef}
-      className={`creation-preview-canvas ad-canvas format-${creation.format} theme-${creation.theme} background-${creation.background} ${backgroundImageUrl ? "background-illustrated background-gallery-image" : ""}`}
+      className={`page-preview-canvas ad-canvas format-${postPage.format} theme-${postPage.theme} background-${postPage.background} ${backgroundImageUrl ? "background-illustrated background-gallery-image" : ""}`}
       style={
         {
           ...(previewWidth ? { "--preview-width": `${previewWidth}px` } : {}),
@@ -85,44 +85,44 @@ export function CreationCanvasPreview({
     >
       {backgroundImageUrl && (
         <CanvasBackgroundImage
-          assetId={creation.backgroundAssetId}
-          positionY={creation.properties.backgroundPositionY}
+          assetId={postPage.backgroundAssetId}
+          positionY={postPage.properties.backgroundPositionY}
           url={backgroundImageUrl}
         />
       )}
       {!backgroundImageUrl && (
-        <ThemeableBackgroundArtwork background={creation.background} />
+        <ThemeableBackgroundArtwork background={postPage.background} />
       )}
       <div className="blob blob-green" />
       <div className="blob blob-purple" />
       <div className="blob blob-blue" />
 
       <div
-        className={`ad-copy text-row-${textVerticalPosition} text-align-${textHorizontalPosition} text-backdrop-${creation.properties.textBackdrop} ${creation.properties.showAssistantLabel ? "with-assistant" : "without-assistant"} ${campaignDescription ? "with-description" : "without-description"}`}
+        className={`ad-copy text-row-${textVerticalPosition} text-align-${textHorizontalPosition} text-backdrop-${postPage.properties.textBackdrop} ${postPage.properties.showAssistantLabel ? "with-assistant" : "without-assistant"} ${messageDescription ? "with-description" : "without-description"}`}
         style={
           {
-            "--text-width": `${creation.properties.textWidth}%`,
-            "--text-margin-x": `${creation.properties.textMarginHorizontal}cqw`,
-            "--text-margin-y": `${creation.properties.textMarginVertical}cqw`,
-            "--text-rotation": `${creation.properties.textRotation}deg`,
+            "--text-width": `${postPage.properties.textWidth}%`,
+            "--text-margin-x": `${postPage.properties.textMarginHorizontal}cqw`,
+            "--text-margin-y": `${postPage.properties.textMarginVertical}cqw`,
+            "--text-rotation": `${postPage.properties.textRotation}deg`,
             "--text-surface-padding": `${TEXT_SPACING}cqw`,
           } as CSSProperties
         }
       >
         <span className="text-backdrop-surface" aria-hidden="true" />
-        {creation.properties.showAssistantLabel && (
+        {postPage.properties.showAssistantLabel && (
           <div className="assistant-label">
             <span aria-hidden="true">✦</span>
             <span className="assistant-label-text">Assistant DailyDish</span>
           </div>
         )}
-        {(campaignTitle || showPlaceholder) && <h2 className={campaignTitle.length > 58 ? "long-title" : ""}>
-          {campaignTitle || "Votre titre"}
+        {(messageTitle || showPlaceholder) && <h2 className={messageTitle.length > 58 ? "long-title" : ""}>
+          {messageTitle || "Votre titre"}
         </h2>}
-        {campaignDescription && <p>{campaignDescription}</p>}
+        {messageDescription && <p>{messageDescription}</p>}
       </div>
 
-      {creation.properties.images.map((image, imageIndex) => {
+      {postPage.properties.images.map((image, imageIndex) => {
         const asset = galleryAssets.find(
           (galleryAsset) => galleryAsset.id === getImageAssetId(image, language),
         );

@@ -31,12 +31,11 @@
   -webkit-mask: var(--icon-url) center / contain no-repeat; vertical-align: middle;
   pointer-events: none;
 }
-:is(.creation-page, .campaign-page, .gallery-page, .publication-calendar):not(.planner-drag-preview) {
+:is(.post-page, .gallery-page, .publication-calendar):not(.planner-drag-preview) {
   background: var(--studio-background); padding: 32px clamp(16px, 3vw, 48px) 48px;
   width: 100%; max-width: none; margin: 0; min-height: calc(100vh - 78px);
 }
-:is(.creation-grid, .campaign-layout, .gallery-content, .campaign-folder-toolbar, .campaign-folder-hint,
-  .campaign-page > .gallery-folder-form, .campaign-page > .gallery-move-status) { max-width: var(--studio-content-width); }
+:is(.post-grid, .gallery-content) { max-width: var(--studio-content-width); }
 .publication-calendar > :not(dialog), .studio-page-header { max-width: var(--studio-content-width); margin-left: auto; margin-right: auto; }
 .studio-page-header {
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap;
@@ -49,16 +48,16 @@
 .studio-page-actions > strong { font-size: var(--studio-meta); color: var(--studio-accent); background: var(--studio-accent-soft); border-radius: 8px; padding: 8px 12px; }
 /* One control system, including legacy controls inside the editor. */
 .studio-button,
-:is(.campaign-primary-button, .campaign-secondary-button, .gallery-new-folder, .gallery-folder-form button,
-  .creation-folder-add-button, .planner-verify-instagram) {
+:is(.post-action-primary, .post-action-secondary, .gallery-new-folder, .gallery-folder-form button,
+  .post-folder-add-button, .planner-verify-instagram) {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 40px; padding: 9px 16px; border: 1px solid var(--studio-border);
   border-radius: var(--studio-control-radius); color: var(--studio-accent); background: var(--studio-surface);
   font-size: var(--studio-body); font-weight: 800; line-height: 1.4; cursor: pointer;
 }
-.studio-button-primary, .campaign-primary-button, .publication-calendar .planner-primary,
+.studio-button-primary, .post-action-primary, .publication-calendar .planner-primary,
 .publication-calendar .planner-verify-instagram { color: white; background: var(--studio-accent); border-color: var(--studio-accent); }
-.studio-button-primary:hover:not(:disabled), .campaign-primary-button:hover:not(:disabled) { background: var(--studio-accent-hover); border-color: var(--studio-accent-hover); }
+.studio-button-primary:hover:not(:disabled), .post-action-primary:hover:not(:disabled) { background: var(--studio-accent-hover); border-color: var(--studio-accent-hover); }
 .studio-button-secondary:hover:not(:disabled) { background: var(--studio-accent-soft); border-color: var(--studio-accent); }
 .studio-button-danger { color: var(--studio-danger); background: var(--studio-danger-soft); border-color: transparent; }
 .studio-button:disabled { opacity: .5; cursor: not-allowed; }
@@ -70,24 +69,23 @@
 .section-heading { background: var(--studio-accent-soft); color: var(--studio-accent); min-height: 48px; padding: 12px 16px; gap: 12px; margin-bottom: 16px; border: 0; border-radius: 0; }
 .section-heading :is(h2, h3, strong) { margin: 0; color: var(--studio-accent); font-size: var(--studio-section-title); line-height: 1.4; font-weight: 850; }
 .section-heading small { background: transparent; color: var(--studio-accent); font-size: var(--studio-meta); padding: 0; font-weight: 800; }
-.section-heading.creation-folder-header { margin-bottom: 0; margin-top: 16px; border-radius: var(--studio-radius); padding: 12px 16px; }
-.creation-folder-title { gap: 8px; }
-.creation-folder-title h3 { font-size: var(--studio-section-title); color: var(--studio-accent); }
-.creation-folder-actions { gap: 8px; flex-wrap: wrap; }
-.creation-folder-toggle small { color: var(--studio-accent); font-size: var(--studio-meta); }
-:is(.creation-folder-edit-button, .creation-folder-delete-button, .gallery-post-edit-button, .gallery-post-close-button) { display: inline-flex; justify-content: center; align-items: center; gap: 8px; color: var(--studio-accent); border-radius: var(--studio-control-radius); }
-.creation-folder-edit-button, .creation-folder-delete-button { width: 36px; height: 36px; background: white; border: 1px solid var(--studio-border); padding: 8px; }
-.creation-folder-delete-button { color: var(--studio-danger); }
+.section-heading.post-folder-header { margin-bottom: 0; margin-top: 16px; border-radius: var(--studio-radius); padding: 12px 16px; }
+.post-folder-title { gap: 8px; }
+.post-folder-title h3 { font-size: var(--studio-section-title); color: var(--studio-accent); }
+.post-folder-actions { gap: 8px; flex-wrap: wrap; }
+.post-folder-toggle small { color: var(--studio-accent); font-size: var(--studio-meta); }
+:is(.post-folder-edit-button, .post-folder-delete-button, .gallery-post-edit-button, .gallery-post-close-button) { display: inline-flex; justify-content: center; align-items: center; gap: 8px; color: var(--studio-accent); border-radius: var(--studio-control-radius); }
+.post-folder-edit-button, .post-folder-delete-button { width: 36px; height: 36px; background: white; border: 1px solid var(--studio-border); padding: 8px; }
+.post-folder-delete-button { color: var(--studio-danger); }
 .section-heading.gallery-folder-heading { margin-top: 24px; margin-bottom: 0; }
 .gallery-folder-heading + .studio-description { margin: 8px 0 16px; }
-.campaign-list .section-heading { margin-bottom: 0; }
 .gallery-folder-toolbar { background: white; border-color: var(--studio-border); border-radius: var(--studio-radius); padding: 12px; }
 .gallery-folder { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; border-radius: var(--studio-control-radius); color: var(--studio-muted); }
 .gallery-folder.selected { background: var(--studio-accent-soft); color: var(--studio-accent); border-color: var(--studio-accent); }
 .gallery-folder small { background: transparent; color: inherit; padding: 0 2px; }
 /* Shared post content: status always starts at the same edge as the cover. */
 .studio-post-preview { display: flex; flex-direction: column; gap: 12px; min-width: 0; width: 100%; }
-.studio-post-cover { position: relative; width: 100%; border-radius: 8px; overflow: hidden; }
+.studio-post-cover { position: relative; isolation: isolate; width: 100%; border-radius: 8px; overflow: hidden; }
 .studio-post-cover .studio-post-image { width: 100%; padding: 0; border: 0; border-radius: 8px; background: #f1f0ec; display: flex; aspect-ratio: 4 / 5; }
 .studio-post-cover .studio-gallery-badge {
   position: absolute; top: auto; left: 8px; right: auto; bottom: 8px; z-index: 20;
@@ -101,19 +99,19 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 .studio-post-footer .instagram-status-unpublished { color: var(--studio-muted); font-weight: 600; }
 .studio-post-footer .instagram-status-flag { font-size: 16px; line-height: 1; }
 .studio-post-actions { display: flex; gap: 4px; margin-left: auto; }
-.studio-post-actions :is(.creation-duplicate-button, .creation-delete-button) { display: grid; place-items: center; width: 32px; height: 32px; padding: 6px; border: 0; border-radius: 8px; color: var(--studio-accent); background: var(--studio-accent-soft); cursor: pointer; }
-.studio-post-actions .creation-delete-button { background: transparent; color: var(--studio-muted); }
-.studio-post-actions .creation-delete-button:hover { background: var(--studio-danger-soft); color: var(--studio-danger); }
+.studio-post-actions :is(.post-duplicate-button, .post-delete-button) { display: grid; place-items: center; width: 32px; height: 32px; padding: 6px; border: 0; border-radius: 8px; color: var(--studio-accent); background: var(--studio-accent-soft); cursor: pointer; }
+.studio-post-actions .post-delete-button { background: transparent; color: var(--studio-muted); }
+.studio-post-actions .post-delete-button:hover { background: var(--studio-danger-soft); color: var(--studio-danger); }
 .studio-post-actions button:disabled { opacity: .5; cursor: wait; }
-.creation-card.post-card, .publication-calendar .planner-picker-post { border: 1px solid var(--studio-border); border-radius: var(--studio-radius); background: white; padding: 12px; box-shadow: none; }
-.creation-card.post-card:hover, .publication-calendar .planner-picker-post:hover { border-color: #bba2d6; }
+.post-card, .publication-calendar .planner-picker-post { border: 1px solid var(--studio-border); border-radius: var(--studio-radius); background: white; padding: 12px; box-shadow: none; }
+.post-card:hover, .publication-calendar .planner-picker-post:hover { border-color: #bba2d6; }
 /* The planner's seven columns keep their existing tile geometry and drag handlers. */
 .publication-calendar .planner-card-open { border: 0; border-radius: 0; }
 .publication-calendar :is(.planner-unscheduled-grid, .planner-day) .studio-post-preview { max-width: min(100%, calc((var(--planner-tile-height) - 120px) * .8)); margin: 0 auto; }
 .publication-calendar .planner-picker-post { width: 100%; font-weight: 400; }
 .publication-calendar .planner-card { border-color: var(--studio-border); border-radius: var(--studio-radius); }
 .publication-calendar :is(.planner-day, .planner-unscheduled-grid) .planner-card-open { padding: 38px 8px 8px; }
-.planner-dialog .planner-picker-grid, .creation-grid.post-grid { gap: 16px; }
+.planner-dialog .planner-picker-grid, .post-grid { gap: 16px; }
 .planner-unscheduled .section-heading { margin-bottom: 12px; }
 .planner-help { font-size: var(--studio-body); color: var(--studio-muted); }
 .publication-calendar .planner-add-tile, .planner-empty-slot { border: 1px dashed #bba2d6; border-radius: var(--studio-radius); color: var(--studio-accent); background: var(--studio-accent-soft); }
@@ -122,15 +120,12 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 .planner-month-nav h3 { font-size: var(--studio-section-title); color: var(--studio-text); }
 .planner-month-nav button, .planner-order-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
 /* Editor panels and dialogs use the same UI typography, never the canvas fonts. */
-:is(.campaign-editor, .campaign-list, .gallery-card, .gallery-post-expanded, .post-type-dialog, .planner-dialog, .gallery-selector-dialog) { border-color: var(--studio-border); border-radius: var(--studio-radius); }
+:is( .gallery-card, .gallery-post-expanded, .post-type-dialog, .planner-dialog, .gallery-selector-dialog) { border-color: var(--studio-border); border-radius: var(--studio-radius); }
 :is(.planner-dialog, .post-type-dialog, .gallery-selector-dialog) { color: var(--studio-text); }
 :is(.planner-dialog, .post-type-dialog, .gallery-selector-dialog) > header :is(h2, h3), .instagram-publication-editor > header h3 { color: var(--studio-text); font-size: 24px; font-weight: 850; line-height: 1.3; }
 :is(.planner-dialog, .post-type-dialog, .gallery-selector-dialog) > header p { color: var(--studio-muted); font-size: var(--studio-body); letter-spacing: normal; text-transform: none; }
 :is(.planner-dialog, .post-type-dialog, .gallery-selector-dialog) header > button { display: grid; place-items: center; width: 36px; height: 36px; padding: 8px; color: var(--studio-muted); background: transparent; border: 0; border-radius: 8px; }
-.campaign-list-item.selected { background: var(--studio-accent-soft); border-color: var(--studio-accent); }
-.campaign-list-item.selected strong, .campaign-editor h3, .post-type-options strong { color: var(--studio-text); }
-.campaign-list-delete { color: var(--studio-muted); }
-.campaign-list-delete:hover { color: var(--studio-danger); background: var(--studio-danger-soft); }
+ .post-type-options strong { color: var(--studio-text); }
 .gallery-dropzone { border-color: #bba2d6; border-radius: var(--studio-radius); background: var(--studio-accent-soft); color: var(--studio-accent); }
 .gallery-card-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: var(--studio-control-radius); }
 .planner-instagram { background: white; border-color: var(--studio-border); padding: 0 20px 20px; overflow: hidden; }
@@ -142,11 +137,11 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 .instagram-language-previews textarea, .planner-toolbar input { border-radius: var(--studio-control-radius); border-color: var(--studio-border); }
 .studio-settings-button { color: var(--studio-muted); }
 @media (max-width: 700px) {
-  :is(.creation-page, .campaign-page, .gallery-page, .publication-calendar):not(.planner-drag-preview) { padding: 24px 16px 32px; }
+  :is(.post-page, .gallery-page, .publication-calendar):not(.planner-drag-preview) { padding: 24px 16px 32px; }
   .studio-page-header { align-items: flex-start; gap: 16px; margin-bottom: 24px; }
   .studio-page-actions { width: 100%; }
-  .creation-folder-actions { gap: 6px; }
-  .section-heading.creation-folder-header { padding: 12px; }
+  .post-folder-actions { gap: 6px; }
+  .section-heading.post-folder-header { padding: 12px; }
   .planner-toolbar, .planner-switch { flex-wrap: wrap; }
   .instagram-account-checks { gap: 16px; flex-wrap: wrap; }
 }
@@ -171,16 +166,12 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 .studio-navigation button.selected { color: var(--studio-accent); }
 .studio-account button { color: var(--studio-accent); }
 .export-button { background: var(--studio-accent); border-radius: var(--studio-control-radius); }
-.campaign-language-tabs button.selected { color: var(--studio-accent); border-color: #bba2d6; background: var(--studio-accent-soft); }
-.campaign-copy-form { background: white; border-radius: var(--studio-radius); border-color: var(--studio-border); padding: 24px; }
-.campaign-form-heading h3 { font-size: var(--studio-section-title); }
-.campaign-form-heading p, .campaign-editor-actions > span { font-size: var(--studio-meta); }
 .studio-folder-chevron { transition: transform 140ms ease; }
 .studio-folder-chevron.collapsed { transform: rotate(-90deg); }
-.creation-editor-context > button { display: inline-flex; align-items: center; gap: 8px; }
-.creation-empty-symbol .studio-icon, .campaign-empty-icon .studio-icon { width: 32px; height: 32px; }
+.page-editor-context > button { display: inline-flex; align-items: center; gap: 8px; }
+.post-empty-symbol .studio-icon { width: 32px; height: 32px; }
 .gallery-upload-symbol { display: grid; place-items: center; }
-.gallery-post-expanded-actions .campaign-primary-button { display: inline-flex; align-items: center; gap: 8px; }
+.gallery-post-expanded-actions .post-action-primary { display: inline-flex; align-items: center; gap: 8px; }
 .planner-folder:not([open]) > summary .studio-folder-chevron { transform: rotate(-90deg); }
 
 /* Editor-only sibling of the export root. All geometry scales from a
@@ -214,3 +205,31 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 .instagram-phone-preview { position: relative; flex: 0 0 auto; background: #777; outline: 5px solid #292929; border-radius: 24px; overflow: hidden; box-shadow: 0 16px 40px rgb(0 0 0 / 16%); }
 .instagram-phone-artwork { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 .instagram-guides-controls .dropdown { width: 100%; margin-bottom: 12px; }
+
+/* Both editor columns operate on the same ordered pages. */
+.post-page-stack { display: grid; gap: 10px; margin-bottom: 12px; }
+.post-page-card { border: 1px solid var(--studio-border); border-radius: var(--studio-radius); overflow: hidden; background: white; }
+.post-page-card.active { border-color: var(--studio-accent); }
+.post-page-card.dragging { opacity: .45; }
+.post-page-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; padding: 8px; }
+.post-page-heading button { border: 0; background: transparent; color: var(--studio-muted); padding: 4px; cursor: pointer; }
+.post-page-heading button:disabled { opacity: .3; cursor: default; }
+.post-page-heading .post-page-handle { cursor: grab; }
+.post-page-heading .post-page-title { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 6px; color: var(--studio-text); font-weight: 700; font-size: 12px; text-align: left; }
+.post-page-title > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.post-page-actions { width: 100%; display: flex; justify-content: flex-end; gap: 8px; }
+.page-message-form { display: grid; gap: 8px; padding: 12px; border-top: 1px solid var(--studio-border); }
+.page-message-form textarea { width: 100%; min-height: 72px; resize: vertical; border: 1px solid var(--studio-border); border-radius: 8px; padding: 10px; font: inherit; font-size: 13px; }
+.page-message-status { color: var(--studio-muted); font-size: 11px; display: flex; align-items: center; gap: 8px; }
+.page-message-status button { color: var(--studio-accent); border: 0; background: transparent; cursor: pointer; }
+.page-swap-dialog { margin: auto; width: min(560px, calc(100vw - 32px)); max-height: 85vh; padding: 24px; border: 1px solid var(--studio-border); border-radius: var(--studio-radius); color: var(--studio-text); }
+.page-swap-dialog::backdrop { background: #17102266; }
+.page-swap-dialog h2 { font-size: var(--studio-section-title); margin: 0 0 12px; }
+.page-swap-dialog p { font-size: 13px; color: var(--studio-muted); line-height: 1.5; }
+.page-swap-choices { display: grid; gap: 8px; margin: 20px 0; }
+.page-swap-choices > button { display: flex; align-items: center; gap: 16px; border: 1px solid var(--studio-border); border-radius: 8px; padding: 10px; background: white; text-align: left; cursor: pointer; }
+.page-swap-choices > button.selected { border-color: var(--studio-accent); background: var(--studio-accent-soft); }
+.page-swap-thumbnail { width: 80px; flex: 0 0 80px; overflow: hidden; }
+.page-swap-actions { display: flex; justify-content: flex-end; gap: 12px; }
+
+.post-system-error { color: var(--studio-danger); padding: 12px; background: var(--studio-danger-soft); border-radius: 8px; }
