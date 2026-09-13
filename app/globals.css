@@ -177,32 +177,37 @@ button { color: inherit; }
 .brand-lockup h1 { font-size: 21px; line-height: 1.15; }
 .header-actions { gap: 12px; }
 
-.studio-navigation {
-  background: #f1f2ed;
-  border: 1px solid var(--line);
+.studio-segmented-control {
+  background: var(--studio-accent-soft);
+  border: 1px solid var(--studio-border);
   border-radius: 14px;
   display: flex;
   gap: 3px;
-  left: 50%;
   padding: 4px;
+}
+.studio-navigation {
+  left: 50%;
   position: absolute;
   transform: translateX(-50%);
 }
-.studio-navigation button {
+.studio-segmented-control button {
   background: transparent;
   border: 0;
   border-radius: 10px;
-  color: var(--muted);
+  color: var(--studio-muted);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 900;
+  font-size: var(--studio-body);
+  font-weight: 800;
   padding: 8px 15px;
 }
-.studio-navigation button.selected {
-  background: white;
+.studio-segmented-control button.selected {
+  background: var(--studio-surface);
   box-shadow: 0 2px 9px rgba(35, 44, 32, 0.09);
-  color: var(--green);
+  color: var(--studio-accent-hover);
 }
+.studio-segmented-control button:disabled { cursor: wait; }
+.studio-segmented-control-stretch { width: 100%; }
+.studio-segmented-control-stretch button { flex: 1; }
 
 .studio-account {
   align-items: flex-end;
@@ -905,28 +910,7 @@ button { color: inherit; }
 .dropdown:has(.dropdown-select:disabled) { opacity: 0.55; }
 .dropdown-select:disabled { cursor: not-allowed; }
 .studio-language-picker {
-  background: #f4f5f1;
-  border-radius: 12px;
-  display: grid;
-  gap: 4px;
-  grid-template-columns: repeat(3, 1fr);
   margin-bottom: 12px;
-  padding: 4px;
-}
-.studio-language-picker button {
-  background: transparent;
-  border: 0;
-  border-radius: 9px;
-  color: var(--muted);
-  cursor: pointer;
-  font-size: 11px;
-  font-weight: 900;
-  padding: 7px;
-}
-.studio-language-picker button.selected {
-  background: white;
-  box-shadow: 0 2px 8px rgba(35, 44, 32, 0.08);
-  color: var(--green);
 }
 
 .studio-workspace {

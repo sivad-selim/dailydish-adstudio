@@ -147,7 +147,7 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 }
 /* Shared selection accent throughout editor controls and asset pickers. */
 :is(.format-choice, .theme-choice, .background-choice).selected { border-color: var(--studio-accent); }
-.format-choice.selected, .studio-language-picker button.selected, .language-tabs button.selected { background: var(--studio-accent-soft); color: var(--studio-accent); }
+.format-choice.selected, .language-tabs button.selected { background: var(--studio-accent-soft); color: var(--studio-accent); }
 .format-choice.selected .format-ratio, .gallery-dropzone strong { color: var(--studio-accent); }
 .theme-choice.selected::after, .background-choice.selected::after, .gallery-upload-symbol { background: var(--studio-accent); }
 .gallery-folder.drop-target { background: var(--studio-accent-soft); outline-color: var(--studio-accent); }
@@ -161,9 +161,6 @@ button.studio-gallery-badge:hover { background: var(--studio-accent-hover); }
 :is(.gallery-selector-close, .gallery-post-close-button) .studio-icon { width: 20px; height: 20px; }
 .control-panel input[type=range], .property-panel input[type=range] { accent-color: var(--studio-accent); }
 .instagram-clear-status button { display: grid; place-items: center; padding: 8px; }
-.studio-navigation { background: #f2eff5; border-color: var(--studio-border); }
-.studio-navigation button { font-size: var(--studio-body); font-weight: 800; }
-.studio-navigation button.selected { color: var(--studio-accent); }
 .studio-account button { color: var(--studio-accent); }
 .export-button { background: var(--studio-accent); border-radius: var(--studio-control-radius); }
 .studio-folder-chevron { transition: transform 140ms ease; }

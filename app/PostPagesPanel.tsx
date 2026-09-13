@@ -4,7 +4,7 @@ import {savePageMessage, type PostPage} from "../firebase/postPages";
 import type {GalleryAsset} from "../firebase/gallery";
 import {PageCanvasPreview} from "./PageCanvasPreview";
 import {SectionHeading} from "./SectionHeading";
-import {Button, Icon} from "./components";
+import {Button, Icon, SegmentedControl} from "./components";
 
 export type MessageEditorHandle = {flush: () => Promise<void>};
 function PageMessageEditor({page, language, editorRef, onPreview, onError}: {
@@ -106,6 +106,8 @@ type Props = {
   onError: (message: string) => void;
 };
 export function PostPagesPanel({pages, activeId, language, assets, editorRef, onLanguageChange, onSelect, onPreview, onAdd, onReorder, onDelete, onSwap, onError}: Props) {
+  const [expandedPageId, setExpandedPageId] = useState("");
+  const expandedId = activeId === expandedPageId ? activeId : "";
   const [dragged, setDragged] = useState("");
   const [busy, setBusy] = useState(false);
   const [swapSource, setSwapSource] = useState("");
@@ -125,19 +127,30 @@ export function PostPagesPanel({pages, activeId, language, assets, editorRef, on
     ids.splice(from, 1); ids.splice(to, 0, source);
     void perform(() => onReorder(ids)); setDragged("");
   }
+  function togglePage(id: string) {
+    if (id === activeId) {
+      setExpandedPageId(expandedId === id ? "" : id);
+      return;
+    }
+    void perform(async () => {
+      await onSelect(id);
+      setExpandedPageId(id);
+    });
+  }
   const title = (page: PostPage) => page.translations[language].title.trim() || "Sans titre";
   return <section className="post-pages-panel">
     <SectionHeading><h2>Pages</h2></SectionHeading>
-    <div className="studio-language-picker" aria-label="Langue des pages">
-      {MESSAGE_LANGUAGES.map((item) => <button key={item.id} type="button" disabled={busy} className={language === item.id ? "selected" : ""} aria-pressed={language === item.id} onClick={() => void perform(() => onLanguageChange(item.id))}>{item.id === "pt" ? "BR" : item.shortLabel}</button>)}
-    </div>
+    <SegmentedControl label="Langue des pages" className="studio-language-picker" stretch
+      value={language} disabled={busy}
+      options={MESSAGE_LANGUAGES.map((item) => ({id: item.id, label: item.id === "pt" ? "BR" : item.shortLabel}))}
+      onChange={(id) => void perform(() => onLanguageChange(id))} />
     <div className="post-page-stack">
       {pages.map((page, index) => <div key={page.id} className={`post-page-card ${page.id === activeId ? "active" : ""} ${dragged === page.id ? "dragging" : ""}`}
         onDragOver={(event) => {if (dragged) {event.preventDefault(); event.dataTransfer.dropEffect = "move";}}}
         onDrop={(event) => {if (dragged) {event.preventDefault(); event.stopPropagation(); move(dragged, page.id);}}}>
         <div className="post-page-heading">
           <button type="button" className="post-page-handle" draggable={!busy} aria-label={`Déplacer la page ${index + 1}`} onDragStart={(event) => {event.dataTransfer.setData("application/x-dailydish-sidebar-page", page.id); event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setDragImage(event.currentTarget.parentElement!, 16, 16); setDragged(page.id);}} onDragEnd={() => setDragged("")}><Icon name="drag_indicator" /></button>
-          <button type="button" className="post-page-title" disabled={busy} onClick={() => void perform(() => onSelect(page.id))} aria-expanded={page.id === activeId}><span>{index + 1} · {title(page)}</span><Icon name={page.id === activeId ? "expand_less" : "expand_more"} /></button>
+          <button type="button" className="post-page-title" disabled={busy} onClick={() => togglePage(page.id)} aria-expanded={page.id === expandedId}><span>{index + 1} · {title(page)}</span><Icon name={page.id === expandedId ? "expand_less" : "expand_more"} /></button>
           <div className="post-page-actions">
             <button type="button" disabled={busy || index === 0} title="Monter la page" aria-label={`Monter la page ${index + 1}`} onClick={() => move(page.id, pages[index - 1].id)}><Icon name="arrow_upward" /></button>
             <button type="button" disabled={busy || index === pages.length - 1} title="Descendre la page" aria-label={`Descendre la page ${index + 1}`} onClick={() => move(page.id, pages[index + 1].id)}><Icon name="arrow_downward" /></button>
@@ -145,7 +158,7 @@ export function PostPagesPanel({pages, activeId, language, assets, editorRef, on
             <button type="button" disabled={busy} title="Supprimer la page" aria-label={`Supprimer la page ${index + 1}`} onClick={() => void perform(() => onDelete(page))}><Icon name="delete" /></button>
           </div>
         </div>
-        {page.id === activeId && <PageMessageEditor key={page.id} page={page} language={language} editorRef={editorRef} onPreview={onPreview} onError={onError} />}
+        {page.id === activeId && <div hidden={page.id !== expandedId}><PageMessageEditor key={page.id} page={page} language={language} editorRef={editorRef} onPreview={onPreview} onError={onError} /></div>}
       </div>)}
     </div>
     <Button disabled={busy || pages.length >= 10} onClick={() => void perform(onAdd)}><Icon name="add" />Ajouter une page</Button>

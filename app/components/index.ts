@@ -3,3 +3,4 @@ export { PageHeader } from "./PageHeader";
 export { Dropdown } from "../Dropdown";
 export { SectionHeading } from "../SectionHeading";
 export { Button } from "./Button";
+export { SegmentedControl } from "./SegmentedControl";

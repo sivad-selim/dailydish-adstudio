@@ -1,7 +1,8 @@
 "use client";
-import { Icon } from "./components";
+import { Icon, SegmentedControl } from "./components";
 import { FormatChangeDialog } from "./components/FormatChangeDialog";
 import { PostPagesPanel, type MessageEditorHandle } from "./PostPagesPanel";
+import { createPageVisualSaveQueue } from "./pageVisualSaveQueue";
 import { InstagramPhonePreview, PREVIEW_PHONES, type PreviewPhone } from "./components/InstagramPhonePreview";
 
 import { exportCanvasPng } from "./exportCanvasPng";
@@ -297,6 +298,8 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   } | null>(null);
   const hydratedPostPageIdRef = useRef("");
   const currentEditorDraftRef = useRef<PostPage | null>(null);
+  const [visualSaveQueue] = useState(() => createPageVisualSaveQueue(savePostPage));
+  const visualSaveTimerRef = useRef<number | null>(null);
   const editorDragPointerYRef = useRef<number | null>(null);
   const editorAutoScrollFrameRef = useRef<number | null>(null);
   const {
@@ -545,6 +548,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
       return;
     }
 
+    visualSaveQueue.loaded(selectedPostPage);
     setReady(false);
     setSelectedPostPageName(selectedPostPage.name);
     setFormat(selectedPostPage.format);
@@ -561,7 +565,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     hydratedPostPageIdRef.current = selectedPostPage.id;
     setPostPageSaveStatus("saved");
     setReady(true);
-  }, [appView, selectedPostPage]);
+  }, [appView, selectedPostPage, visualSaveQueue]);
 
   useEffect(() => {
     if (
@@ -572,28 +576,39 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
       return;
     }
 
+    const draft = {
+      id: selectedPostPageId,
+      name: selectedPostPageName,
+      format,
+      theme,
+      background,
+      backgroundAssetId,
+      properties,
+    };
+    if (visualSaveQueue.isSaved(draft)) {
+      setPostPageSaveStatus("saved");
+      return;
+    }
     setPostPageSaveStatus("saving");
-    const saveTimer = window.setTimeout(() => {
-      void savePostPage({
-        id: selectedPostPageId,
-        name: selectedPostPageName,
-        format,
-        theme,
-        background,
-        backgroundAssetId,
-        properties,
-      })
+    visualSaveTimerRef.current = window.setTimeout(() => {
+      visualSaveTimerRef.current = null;
+      void visualSaveQueue.save(draft)
         .then(() => {
+          if (currentEditorDraftRef.current?.id !== draft.id || !visualSaveQueue.isSaved(currentEditorDraftRef.current)) return;
           setPostPageSaveStatus("saved");
           setPostPageError("");
         })
         .catch(() => {
+          if (currentEditorDraftRef.current?.id !== draft.id) return;
           setPostPageSaveStatus("error");
           setPostPageError("La page n’a pas pu être enregistrée.");
         });
     }, 600);
 
-    return () => window.clearTimeout(saveTimer);
+    return () => {
+      if (visualSaveTimerRef.current !== null) window.clearTimeout(visualSaveTimerRef.current);
+      visualSaveTimerRef.current = null;
+    };
   }, [
     background,
     backgroundAssetId,
@@ -603,6 +618,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     selectedPostPageId,
     selectedPostPageName,
     theme,
+    visualSaveQueue,
   ]);
 
   const selectBackgroundImage = (asset: GalleryAsset) => {
@@ -891,24 +907,34 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
     theme,
   ]);
 
+  const flushEditor = async () => {
+    // Edits can continue while a write is pending. Drain the latest draft too.
+    do {
+      if (visualSaveTimerRef.current !== null) window.clearTimeout(visualSaveTimerRef.current);
+      visualSaveTimerRef.current = null;
+      await messageEditorRef.current?.flush();
+      const draft = currentEditorDraftRef.current;
+      if (draft) await visualSaveQueue.save(draft);
+      await messageEditorRef.current?.flush();
+    } while (currentEditorDraftRef.current && !visualSaveQueue.isSaved(currentEditorDraftRef.current));
+  };
+
   const activateGalleryPage = async (postPageId: string) => {
-    try { await messageEditorRef.current?.flush(); } catch { return; }
-    setMessagePreview(null);
     if (postPageId === selectedPostPageId) return;
     const postPage = postPages.find((candidate) => candidate.id === postPageId);
     if (!postPage) return;
 
-    const outgoingDraft = currentEditorDraftRef.current;
-    if (outgoingDraft) {
-      try {
-        await savePostPage(outgoingDraft);
-      } catch {
-        setPostPageSaveStatus("error");
-        setPostPageError("La page n’a pas pu être enregistrée. Réessaie avant de changer de page.");
-        return;
-      }
+    try {
+      await flushEditor();
+    } catch {
+      const message = "La page n’a pas pu être enregistrée. Réessaie avant de changer de page.";
+      setPostPageSaveStatus("error");
+      setPostPageError(message);
+      throw new Error(message);
     }
 
+    setMessagePreview(null);
+    visualSaveQueue.loaded(postPage);
     hydratedPostPageIdRef.current = postPage.id;
     setSelectedPostPageId(postPage.id);
     setSelectedPostPageName(postPage.name);
@@ -1229,7 +1255,6 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
       <div
         key={page.id}
         className={`gallery-editor-page gallery-editor-page-preview-shell format-${page.format} ${isActive ? "active" : ""} ${draggedEditorPageId === page.id ? "dragging" : ""} ${dragOverEditorPageId === page.id ? "drag-over" : ""}`}
-        data-gallery-editor-page-id={page.id}
         style={
           {
             "--preview-width": `${Math.round(
@@ -1275,7 +1300,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             type="button"
             className="gallery-editor-page-label"
             onClick={() => {
-              if (!isActive) activateGalleryPage(page.id);
+              if (!isActive) void activateGalleryPage(page.id).catch(() => undefined);
             }}
             aria-label={`Sélectionner la page ${pageIndex + 1}`}
             aria-current={isActive ? "page" : undefined}
@@ -1328,12 +1353,10 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
   };
 
   const navigateToView = async (nextView: Exclude<AppView, "studio">) => {
-    try { await messageEditorRef.current?.flush(); } catch { return; }
     if (appView === "posts" && nextView !== "posts") postsScrollRef.current = window.scrollY;
-    const editorDraft = currentEditorDraftRef.current;
-    if (appView === "studio" && editorDraft) {
+    if (appView === "studio") {
       try {
-        await savePostPage(editorDraft);
+        await flushEditor();
       } catch {
         setPostPageSaveStatus("error");
         setPostPageError("La page n’a pas pu être enregistrée. Réessaie avant de quitter l’éditeur.");
@@ -1355,27 +1378,14 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
         </div>
         <div className="studio-navigation-group">
           <button type="button" className={`studio-settings-button ${appView === "settings" ? "selected" : ""}`} aria-label="Réglages" title="Réglages" aria-pressed={appView === "settings"} onClick={() => navigateToView("settings")}><Icon name="build" /></button>
-        <nav className="studio-navigation" aria-label="Navigation principale">
-          <button type="button" className={`calendar-nav ${appView === "calendar" ? "selected" : ""}`} aria-pressed={appView === "calendar"} onClick={() => navigateToView("calendar")}>Calendrier</button>
-          <button
-            type="button"
-            className={
-              appView === "posts" || appView === "studio" ? "selected" : ""
-            }
-            aria-pressed={appView === "posts" || appView === "studio"}
-            onClick={() => navigateToView("posts")}
-          >
-            Posts
-          </button>
-          <button
-            type="button"
-            className={appView === "gallery" ? "selected" : ""}
-            aria-pressed={appView === "gallery"}
-            onClick={() => navigateToView("gallery")}
-          >
-            Galerie
-          </button>
-        </nav>
+        <SegmentedControl<Exclude<AppView, "studio">> as="nav" className="studio-navigation" label="Navigation principale"
+          value={appView === "studio" ? "posts" : appView}
+          options={[
+            {id: "calendar", label: "Calendrier", className: "calendar-nav"},
+            {id: "posts", label: "Posts"},
+            {id: "gallery", label: "Galerie"},
+          ]}
+          onChange={(view) => void navigateToView(view)} />
         </div>
         <div className="header-actions">
           {accountEmail && onSignOut && (
@@ -1488,10 +1498,7 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
             pages={editingPostPages} activeId={selectedPostPageId} language={messageLanguage}
             editorRef={messageEditorRef} assets={backgroundGalleryAssets}
             onLanguageChange={async (language) => { await messageEditorRef.current?.flush(); setMessageLanguage(language); }}
-            onSelect={async (id) => {
-              await activateGalleryPage(id);
-              document.querySelector(`[data-gallery-editor-page-id="${id}"]`)?.scrollIntoView({behavior: "smooth", block: "start"});
-            }}
+            onSelect={activateGalleryPage}
             onPreview={(translations) => setMessagePreview({id: selectedPostPageId, translations})}
             onAdd={async () => { await messageEditorRef.current?.flush(); await handleAddPostPage(editingPost); }}
             onReorder={(ids) => handleReorderPostPages(editingPost, ids)}
