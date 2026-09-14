@@ -2804,7 +2804,7 @@ textarea:focus {
 }
 .text-backdrop-control {
   border-top: 1px solid var(--line);
-  padding: 12px 2px 2px;
+  padding: 12px 2px;
 }
 .text-backdrop-control .field-label { margin-bottom: 8px; }
 
@@ -4360,9 +4360,9 @@ textarea:focus {
 /* KMP OnboardingBubble: 16dp corners, solid shadow offset 8dp/10dp.
    Scale the mobile geometry from a 360dp canvas to previews and PNG exports. */
 .ad-copy .onboarding-text-bubble {
-  background: #fff8e8;
   border-radius: 4.444444cqw;
-  box-shadow: 2.222222cqw 2.777778cqw 0 #d2a55e;
+  isolation: isolate;
+  position: relative;
   box-sizing: border-box;
   padding: 13.333333cqw 6.666667cqw 8.888889cqw;
   width: 100%;
@@ -4389,4 +4389,47 @@ textarea:focus {
 /* A description-only bubble needs no extra space above its content. */
 .ad-copy .onboarding-text-bubble:not(:has(h2)) {
   padding-top: 8.888889cqw;
+}
+
+/* Keep the KMP hard shadow on the body only. The cream pointer has no
+   offset shadow, so none of its diagonal edges receives a brown outline. */
+.onboarding-text-bubble > .bubble-silhouette {
+  background: var(--bubble-fill);
+  border-radius: inherit;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: -1;
+}
+.bubble-silhouette-shadow {
+  --bubble-fill: #d2a55e;
+  transform: translate(2.222222cqw, 2.777778cqw);
+}
+.bubble-silhouette-face {
+  --bubble-fill: #fff8e8;
+}
+/* 26dp wide/high: 30% larger than the original 20dp pointer. */
+.onboarding-text-bubble:is(.bubble-tail-left, .bubble-tail-center, .bubble-tail-right) > .bubble-silhouette-face::after {
+  background: var(--bubble-fill);
+  top: calc(100% - 1px);
+  content: "";
+  height: calc(7.222222cqw + 1px);
+  position: absolute;
+  width: 7.222222cqw;
+}
+.bubble-tail-left > .bubble-silhouette::after {
+  clip-path: polygon(0 0, 100% 0, 0 100%);
+  left: 6.666667cqw;
+}
+.bubble-tail-right > .bubble-silhouette::after {
+  clip-path: polygon(0 0, 100% 0, 100% 100%);
+  right: 6.666667cqw;
+}
+.bubble-tail-center > .bubble-silhouette::after {
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  left: calc(50% - 3.611111cqw);
+}
+.ad-copy > .onboarding-text-bubble.bubble-target-title:not(.bubble-tail-none):has(+ p) {
+  /* Keep the pointer and its shadow clear of the description below. */
+  margin-bottom: 12.4cqw;
 }

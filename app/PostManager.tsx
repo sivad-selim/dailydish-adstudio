@@ -29,6 +29,19 @@ import {
 } from "./dragScroll";
 
 const UNFILED_DROP_KEY = "__unfiled__";
+const COLLAPSED_FOLDERS_STORAGE_KEY = "dailydish:posts:collapsed-folders:v1";
+
+function readCollapsedFolderKeys(fallback: string[]): string[] {
+  try {
+    const saved: unknown = JSON.parse(window.localStorage.getItem(COLLAPSED_FOLDERS_STORAGE_KEY) ?? "null");
+    if (Array.isArray(saved) && saved.every((key) => typeof key === "string")) {
+      return saved;
+    }
+  } catch {
+    // Keep navigation state when storage is unavailable or contains invalid JSON.
+  }
+  return fallback;
+}
 
 export type PostListViewState = { expandedPostId: string; collapsedFolderKeys: string[] };
 
@@ -118,11 +131,18 @@ export function PostManager({
   const [dragOverPageId, setDragOverPageId] = useState("");
   const [dragOverFolderKey, setDragOverFolderKey] = useState("");
   const [collapsedFolderKeys, setCollapsedFolderKeys] = useState<Set<string>>(
-    () => new Set(viewStateRef.current.collapsedFolderKeys),
+    () => new Set(readCollapsedFolderKeys(viewStateRef.current.collapsedFolderKeys)),
   );
   useEffect(() => {
     viewStateRef.current = { expandedPostId, collapsedFolderKeys: [...collapsedFolderKeys] };
   }, [expandedPostId, collapsedFolderKeys, viewStateRef]);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLLAPSED_FOLDERS_STORAGE_KEY, JSON.stringify([...collapsedFolderKeys]));
+    } catch {
+      // Folder controls remain usable even when browser storage is blocked.
+    }
+  }, [collapsedFolderKeys]);
   const [localError, setLocalError] = useState("");
   const dragPointerYRef = useRef<number | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);

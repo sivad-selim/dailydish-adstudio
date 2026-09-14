@@ -72,6 +72,7 @@ import {
   type PageLayout,
   type TextBackdrop,
   type TextBubbleTarget,
+  type TextBubbleTail,
   type TextColorTone,
   type TextPosition,
 } from "../firebase/postPages";
@@ -2045,8 +2046,10 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                 <option value="card-theme">Rectangle thème</option>
                 <option value="bubble">Bubble</option>
               </Dropdown>
-              {textBackdrop === "bubble" && (
-                <>
+            </div>
+            {textBackdrop === "bubble" && (
+              <>
+                <div className="text-backdrop-control">
                   <label className="field-label" htmlFor="text-bubble-target">Appliquer la bulle à</label>
                   <Dropdown
                     id="text-bubble-target"
@@ -2057,9 +2060,22 @@ export default function Home({ accountEmail, onSignOut }: HomeProps = {}) {
                     <option value="title">Titre uniquement</option>
                     <option value="description">Description uniquement</option>
                   </Dropdown>
-                </>
-              )}
-            </div>
+                </div>
+                <div className="text-backdrop-control">
+                  <label className="field-label" htmlFor="text-bubble-tail">Pointe</label>
+                  <Dropdown
+                    id="text-bubble-tail"
+                    value={properties.textBubbleTail ?? "none"}
+                    onChange={(event) => updatePostPageProperty("textBubbleTail", event.target.value as TextBubbleTail)}
+                  >
+                    <option value="none">Aucune</option>
+                    <option value="left">Bas gauche</option>
+                    <option value="center">Bas centre</option>
+                    <option value="right">Bas droite</option>
+                  </Dropdown>
+                </div>
+              </>
+            )}
           </section>
 
           <StoreButtonsControls value={properties.storeButtons} assets={galleryAssets} loading={galleryLoading}

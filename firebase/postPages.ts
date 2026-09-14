@@ -205,6 +205,7 @@ const readPageLayout = (
       ],
       fallback.textBackdrop,
     ),
+    textBubbleTail: readEnum(properties.textBubbleTail, ["none", "left", "center", "right"] as const, "none"),
     textBubbleTarget: readEnum(properties.textBubbleTarget, ["both", "title", "description"] as const, "both"),
     storeButtons: {
       enabled: storeButtons.enabled === true,

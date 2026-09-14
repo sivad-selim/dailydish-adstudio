@@ -3,6 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, Ref } from "reac
 import type { MessageLanguage } from "../firebase/messages";
 import { TEXT_SPACING, getImageAssetId, type PostPage } from "../firebase/postPages";
 import type { GalleryAsset } from "../firebase/gallery";
+import { formatDisplayText } from "./textTypography";
 import { CanvasBackgroundImage } from "./CanvasBackgroundImage";
 import { StoreButtonsPreview } from "./StoreButtonsPreview";
 import { ThemeableBackgroundArtwork } from "./ThemeableBackgroundArtwork";
@@ -73,14 +74,16 @@ export function PageCanvasPreview({
   const bubble = postPage.properties.textBackdrop === "bubble";
   const bubbleTarget = postPage.properties.textBubbleTarget ?? "both";
   const title = messageTitle.trim() ? (
-    <h2 className={messageTitle.length > 58 ? "long-title" : ""}>{messageTitle}</h2>
+    <h2 className={messageTitle.length > 58 ? "long-title" : ""}>{formatDisplayText(messageTitle, language)}</h2>
   ) : null;
-  const description = messageDescription.trim() ? <p>{messageDescription}</p> : null;
+  const description = messageDescription.trim() ? <p>{formatDisplayText(messageDescription, language)}</p> : null;
   const textContent = bubble ? (
     <>
       {bubbleTarget === "description" && title}
       {(bubbleTarget === "both" ? title || description : bubbleTarget === "title" ? title : description) && (
-        <div className={`onboarding-text-bubble bubble-target-${bubbleTarget}`}>
+        <div className={`onboarding-text-bubble bubble-target-${bubbleTarget} bubble-tail-${postPage.properties.textBubbleTail ?? "none"}`}>
+          <span className="bubble-silhouette bubble-silhouette-shadow" aria-hidden="true" />
+          <span className="bubble-silhouette bubble-silhouette-face" aria-hidden="true" />
           {bubbleTarget !== "description" && title}
           {bubbleTarget !== "title" && description}
         </div>
@@ -99,6 +102,7 @@ export function PageCanvasPreview({
           ...themeStyle,
         } as CSSProperties
       }
+      lang={language === "pt" ? "pt-BR" : language}
       aria-hidden={interactive ? undefined : true}
     >
       {backgroundImageUrl && (

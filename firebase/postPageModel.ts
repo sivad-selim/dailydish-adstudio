@@ -22,6 +22,7 @@ export type TextBackdrop =
   | "card"
   | "card-theme"
   | "bubble";
+export type TextBubbleTail = "none" | "left" | "center" | "right";
 export type TextBubbleTarget = "both" | "title" | "description";
 export type AdTheme = string;
 export type AdBackground =
@@ -107,6 +108,7 @@ export type PageLayout = {
   showAssistantLabel: boolean;
   textBackdrop: TextBackdrop;
   textBubbleTarget?: TextBubbleTarget;
+  textBubbleTail?: TextBubbleTail;
   storeButtons: StoreButtonSettings;
   images: PageImage[];
 };
@@ -198,6 +200,7 @@ export const DEFAULT_PAGE_LAYOUT: PageLayout = {
   showAssistantLabel: true,
   textBackdrop: "gradient-light",
   textBubbleTarget: "both",
+  textBubbleTail: "none",
   storeButtons: { enabled: false, direction: "row", bottomMargin: 6, scale: 100, iosAssetId: "", androidAssetId: "" },
   images: [createPageImage("hero-image-1")],
 };
